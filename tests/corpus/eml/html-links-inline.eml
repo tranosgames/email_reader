@@ -1,0 +1,40 @@
+Return-Path: <bounce@mailer.example>
+Received: from mailer.example (mailer.example [192.0.2.10])
+	by mx.victim.example with ESMTPS; Mon, 12 Oct 2026 14:00:05 +0000
+From: "Banque Exemple" <service@banque-exemple.example>
+To: client@victim.example
+Subject: Votre relevé est disponible
+Date: Mon, 12 Oct 2026 16:00:00 +0200
+Message-ID: <r42@mailer.example>
+List-Unsubscribe: <https://mailer.example/unsub?u=42>
+MIME-Version: 1.0
+Content-Type: multipart/related; boundary="rel"
+
+--rel
+Content-Type: multipart/alternative; boundary="alt"
+
+--alt
+Content-Type: text/plain; charset=utf-8
+
+Consultez votre relevé : https://banque-exemple.example.login-verif.example/releve
+Aide : www.aide-banque.example/faq
+--alt
+Content-Type: text/html; charset=utf-8
+
+<html><body>
+<img src="cid:logo@banque">
+<p>Consultez <a href="https://banque-exemple.example.login-verif.example/releve">votre relev&eacute;</a>.</p>
+<p><a href="https://banque-exemple.example.login-verif.example/releve">Cliquez ici</a></p>
+<p>Ou <a href="http://198.51.100.23/r?id=42&amp;t=1">www.banque-exemple.example</a></p>
+<img src="https://track.mailer.example/open.gif?u=42" width="1" height="1">
+<script>alert("x")</script>
+</body></html>
+--alt--
+--rel
+Content-Type: image/png
+Content-ID: <logo@banque>
+Content-Disposition: inline; filename="logo.png"
+Content-Transfer-Encoding: base64
+
+iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==
+--rel--

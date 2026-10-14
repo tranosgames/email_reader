@@ -1,0 +1,24 @@
+Received: from mx.attacker.example (mx.attacker.example [203.0.113.7])
+	by mx.victim.example with ESMTPS id abc123; Tue, 13 Oct 2026 09:12:03 +0000
+Received: from [192.168.1.20] (unknown [198.51.100.4])
+	by mx.attacker.example with ESMTPSA; Tue, 13 Oct 2026 09:12:01 +0000
+From: "IT Support" <support@micros0ft-help.example>
+Reply-To: harvest@attacker.example
+To: victim@victim.example
+Subject: =?UTF-8?B?VXJnZW50IDogbW90IGRlIHBhc3NlIGV4cGlyw6k=?=
+Date: Tue, 13 Oct 2026 09:12:00 +0000
+Message-ID: <x1@attacker.example>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="b1"
+
+--b1
+Content-Type: text/html; charset=utf-8
+
+<p>Cliquez <a href="http://203.0.113.7/login">ici</a></p>
+--b1
+Content-Type: application/octet-stream; name="facture.pdf.exe"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="facture.pdf.exe"
+
+TVqQAAMAAAAEAAAA//8AALgAAAAAAAAAQAAAAAAAAAA=
+--b1--

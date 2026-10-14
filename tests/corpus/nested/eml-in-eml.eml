@@ -1,0 +1,35 @@
+From: analyste@soc.example
+To: incident@soc.example
+Subject: TR: message signalé
+Date: Wed, 14 Oct 2026 08:00:00 +0000
+Message-ID: <fw1@soc.example>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="m"
+
+--m
+Content-Type: text/plain; charset=utf-8
+
+Voir le message joint. Ticket : https://tickets.soc.example/INC-1234
+--m
+Content-Type: message/rfc822
+Content-Disposition: attachment; filename="signalé.eml"
+
+From: "IT Support" <support@micros0ft-help.example>
+To: victim@victim.example
+Subject: Urgent
+Date: Tue, 13 Oct 2026 09:12:00 +0000
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="i"
+
+--i
+Content-Type: text/html; charset=utf-8
+
+<a href="http://203.0.113.7/login">Connexion</a>
+--i
+Content-Type: application/zip; name="facture.zip"
+Content-Disposition: attachment; filename="facture.zip"
+Content-Transfer-Encoding: base64
+
+UEsFBgAAAAAAAAAAAAAAAAAAAAAAAA==
+--i--
+--m--

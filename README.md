@@ -14,10 +14,10 @@ Le projet est structuré avec [spec-kit](https://github.com/github/spec-kit) (Sp
 |---|---|---|
 | `/speckit-constitution` | ✅ `.specify/memory/constitution.md` v1.0.0 | (partagée) |
 | `/speckit-specify` | ✅ `spec.md` + checklist | ✅ `spec.md` (brouillon) |
-| `/speckit-clarify` | optionnel — voir « Décisions à confirmer » | — |
+| `/speckit-clarify` | ✅ session 2026-10-14 : en-têtes, fichiers, URL (FR-035–037) | — |
 | `/speckit-plan` | ✅ `plan.md`, `research.md`, `data-model.md`, `contracts/`, `quickstart.md` | à faire |
-| `/speckit-tasks` | ✅ `tasks.md` (90 tâches, 9 phases) | à faire |
-| `/speckit-analyze` → `/speckit-implement` → `/speckit-converge` | prochaine étape | — |
+| `/speckit-tasks` | ✅ `tasks.md` (97 tâches, 9 phases) | à faire |
+| `/speckit-implement` | 🚧 vue de lecture : bouton des en-têtes, fichiers contenus, URL (T091–T097) | — |
 
 ## Arborescence
 
@@ -27,14 +27,48 @@ Le projet est structuré avec [spec-kit](https://github.com/github/spec-kit) (Sp
 specs/
 ├── 001-email-forensic-viewer/   # feature active (.specify/feature.json)
 └── 002-pst-support/
+crates/                   # moteur Rust : mf-core, mf-eml, mf-msg, mf-analysis, mf-engine, mf-cli
+apps/desktop/             # application Tauri 2 (src-tauri/) + interface TypeScript (src/)
+tests/corpus/             # EML/MSG de référence (voir son README)
 spikes/crate-validation/  # prototype Phase 0 : valide mail-parser, cfb, msg_parser, outlook-pst
 ```
 
 ## Pile technique (voir `specs/001-email-forensic-viewer/research.md`)
 
 - EML : `mail-parser` · MSG : `cfb` + couche MAPI maison (oracle de test : `msg_parser`) · PST : `outlook-pst` (Microsoft, lecture seule)
-- UI : Tauri 2 + TypeScript vanilla + Tailwind (même découpage que msg-reader : `FileHandler`, `MessageHandler`, `UIManager`)
+- UI : Tauri 2 + TypeScript vanilla + CSS natif, polices embarquées (même découpage que msg-reader : `FileHandler`, `MessageHandler`, `UIManager`)
 - CLI `mf` pour l'automatisation et la contre-vérification
+
+## Utiliser
+
+**Application de bureau** — prérequis : Rust stable, Node.js ≥ 20 ; sous Linux `libwebkit2gtk-4.1-dev libsoup-3.0-dev librsvg2-dev` ; sous Windows WebView2 (déjà présent sur Windows 10/11).
+
+```console
+cd apps/desktop
+npm install
+npm run tauri dev          # développement
+npm run tauri build        # installeurs .msi/.exe, .dmg, .deb/.AppImage
+```
+
+Déposez des `.eml` / `.msg` (ou un dossier) dans la fenêtre. Pour chaque message :
+
+- **Afficher les en-têtes** (bouton ou touche `H`) déplie tous les en-têtes bruts, dans l'ordre d'origine ; l'état reste mémorisé d'un message à l'autre.
+- **Fichiers contenus** liste chaque pièce jointe (nom, type, taille, inline/attaché, SHA-256) ; un message joint (`.eml`, `.msg`) s'ouvre avec **Ouvrir le message joint**, qui affiche ses propres en-têtes, fichiers et URL.
+- **URL** liste toutes les URL du message, dédoublonnées, avec leur emplacement (en-tête, texte, HTML `href`/`src`, CSS) ; elles ne sont jamais cliquables et se copient brutes ou défangées.
+
+Autres raccourcis : `↑`/`↓` changer de message, `P` épingler, `Échap` revenir au message parent.
+
+**Ligne de commande** :
+
+```console
+cargo build --release
+./target/release/mf show courriel.eml --headers      # résumé + en-têtes + fichiers + URL
+./target/release/mf urls suspect.msg --defang
+./target/release/mf attachments suspect.msg          # arborescence des messages joints
+./target/release/mf show suspect.msg --path 3 --json # message joint n°3, en JSON
+```
+
+**Tests** : `cargo test` (16 tests, dont corpus et concordance avec `msg_parser`).
 
 ## Continuer
 
@@ -43,7 +77,7 @@ uv tool install specify-cli     # ou: pip install specify-cli
 claude                          # dans ce dossier ; les skills /speckit-* sont déjà installés
 /speckit-clarify                # facultatif
 /speckit-analyze
-/speckit-implement              # commence par la Phase 1 (Setup) puis le MVP (US1)
+/speckit-implement              # poursuit le MVP (US1), puis US2…US6
 ```
 
 Prototype de validation des crates :

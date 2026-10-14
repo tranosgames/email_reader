@@ -28,11 +28,11 @@ Workspace Cargo : `crates/mf-*/src/`, app : `apps/desktop/`, tests transverses :
 
 **Purpose**: Project initialization and basic structure
 
-- [ ] T001 Créer le workspace Cargo `Cargo.toml` (édition 2024, `resolver = "3"`, MSRV 1.85, `[workspace.dependencies]` épinglées selon plan.md) et les crates vides `crates/mf-core`, `crates/mf-eml`, `crates/mf-msg`, `crates/mf-analysis`, `crates/mf-report`, `crates/mf-cli`
+- [x] T001 Créer le workspace Cargo `Cargo.toml` (édition 2024, `resolver = "3"`, MSRV 1.85, `[workspace.dependencies]` épinglées selon plan.md) et les crates vides `crates/mf-core`, `crates/mf-eml`, `crates/mf-msg`, `crates/mf-analysis`, `crates/mf-report`, `crates/mf-cli`
 - [ ] T002 [P] Ajouter `#![forbid(unsafe_code)]` et `#![deny(clippy::unwrap_used, clippy::panic)]` dans chaque `crates/*/src/lib.rs`
 - [ ] T003 [P] Configurer `rustfmt.toml`, `clippy.toml`, `deny.toml` (licences permissives uniquement, advisories)
 - [ ] T004 [P] Créer `.github/workflows/ci.yml` : fmt, clippy `-D warnings`, test, `cargo deny check`, matrice Linux/Windows/macOS
-- [ ] T005 [P] Initialiser l'app `apps/desktop` (Tauri 2.12 + Vite + TypeScript + Tailwind) avec `src/main.ts`, `FileHandler.ts`, `MessageHandler.ts`, `UIManager.ts` vides, modèle msg-reader
+- [x] T005 [P] Initialiser l'app `apps/desktop` (Tauri 2.12 + Vite + TypeScript + Tailwind) avec `src/main.ts`, `FileHandler.ts`, `MessageHandler.ts`, `UIManager.ts` vides, modèle msg-reader
 - [ ] T006 [P] Initialiser `fuzz/` avec `cargo fuzz init` (cibles vides `eml_parse`, `msg_parse`, `rtf_decompress`, `auth_results`)
 - [ ] T007 Constituer le corpus initial `tests/corpus/` : `eml/phishing-basic.eml`, `eml/html-tracking-pixel.eml`, `eml/dkim-signed.eml`, `eml/multi-received.eml`, `msg/attachment.msg`, `msg/unicode.msg`, `msg/ascii.msg` (jeu de test MIT de msg_parser), `nested/msg-in-msg.msg`, `nested/eml-in-eml.eml`, `malformed/*` (tronqué, OLE corrompu, MIME sans fin) + `tests/corpus/README.md` (origine, licence, empreinte de chaque fichier)
 
@@ -88,11 +88,26 @@ Workspace Cargo : `crates/mf-*/src/`, app : `apps/desktop/`, tests transverses :
 - [ ] T031 [P] [US1] Implémenter la sanitisation HTML (`ammonia`, réécriture `cid:`, compteur de ressources bloquées) dans `crates/mf-analysis/src/html.rs`
 - [ ] T032 [US1] Enregistrer les parseurs EML/MSG comme `EvidenceSource` dans `crates/mf-core/src/source.rs` ; implémenter `mf show`
 - [ ] T033 [US1] Implémenter les commandes Tauri `ingest_paths`, `list_messages`, `get_message`, `get_evidence`, `set_pin` + événements `ingest://*` dans `apps/desktop/src-tauri/src/commands.rs` et `jobs.rs`
-- [ ] T034 [US1] Configurer `tauri.conf.json` (CSP `default-src 'none'`, associations `.eml`/`.msg`, pas d'updater) et `capabilities/default.json` (sans shell/http/fs/opener)
-- [ ] T035 [US1] Frontend `FileHandler.ts` : zone de dépôt plein écran (comme msg-reader), dialogue fichiers/dossier, ouverture par association
+- [x] T034 [US1] Configurer `tauri.conf.json` (CSP `default-src 'none'`, associations `.eml`/`.msg`, pas d'updater) et `capabilities/default.json` (sans shell/http/fs/opener)
+- [x] T035 [US1] Frontend `FileHandler.ts` : zone de dépôt plein écran (comme msg-reader), dialogue fichiers/dossier, ouverture par association
 - [ ] T036 [US1] Frontend `MessageHandler.ts` + `UIManager.ts` : liste latérale (expéditeur, objet, date, badges PJ/alerte), tri, épingles, raccourcis ↑/↓/P, thèmes clair/sombre
 - [ ] T037 [US1] Frontend `views/reading.ts` : en-tête lisible, sélecteur texte/HTML/RTF, iframe `sandbox` sans `allow-scripts`, bandeau ressources bloquées, liste des PJ (métadonnées) ; panneau empreintes de la preuve
 - [ ] T038 [US1] Journaliser Ingest/Duplicate/ParseError/View/Pin dans le journal d'audit
+
+### Ajouts clarification 2026-10-14 (FR-035, FR-036, FR-037) — dans le MVP
+
+> Implémenté le 2026-10-14 : moteur (`mf-core`, `mf-eml`, `mf-msg`, `mf-analysis`, `mf-engine`), CLI `mf`
+> (`show --headers`, `headers`, `attachments`, `urls`) et vue de lecture de l'app. Les tâches de
+> socle touchées en chemin (T008, T012, T019–T026, T029, T031, T033, T036, T037) sont **partiellement**
+> faites et restent ouvertes jusqu'à leur couverture complète.
+
+- [x] T091 [P] [US1] Test liste d'URL par message : extraction depuis en-têtes, texte et attributs HTML (`href`, `src`, `action`), dédoublonnage, emplacements, défangage dans `crates/mf-analysis/tests/urls.rs`
+- [x] T092 [US1] Implémenter l'extraction d'URL de base dans `crates/mf-analysis/src/urls.rs` (socle de T064, qui ajoutera domaines/IP/courriels)
+- [x] T093 [P] [US1] Test liste des fichiers contenus EML et MSG (nom, type déclaré, taille, SHA-256, inline/attaché, message embarqué) dans `crates/mf-eml/tests/convert.rs` et `crates/mf-msg/tests/convert.rs`
+- [x] T094 [US1] Implémenter la liste des PJ de base dans `crates/mf-eml/src/convert.rs` et `crates/mf-msg/src/attachments.rs` (socle de T055/T057)
+- [x] T095 [US1] Frontend : bouton « Afficher / Masquer les en-têtes » + raccourci `H`, état mémorisé en session, dans `apps/desktop/src/views/reading.ts`
+- [x] T096 [US1] Frontend : section « Fichiers contenus (n) » dans `apps/desktop/src/views/reading.ts`
+- [x] T097 [US1] Frontend : section « URL (n) » avec emplacement, copie brute/défangée, jamais cliquable, dans `apps/desktop/src/views/reading.ts`
 
 **Checkpoint**: User Story 1 fonctionnelle et testable seule — MVP « lecteur forensic sûr ».
 
@@ -324,6 +339,8 @@ Task: "T031 Sanitisation HTML dans crates/mf-analysis/src/html.rs"
 | FR-015 | T042, T047 | | FR-032 | T017, T032, T049, T058, T067, T075, T081 |
 | FR-016 | T051, T055, T057 | | FR-033 | T034, T086 |
 | FR-017 | T053, T057 | | FR-034 | T009, T024, T084 |
+| FR-035 | T095 | | FR-036 | T093, T094, T096 |
+| FR-037 | T091, T092, T097 | | | |
 
 ---
 

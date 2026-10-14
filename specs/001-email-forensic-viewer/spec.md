@@ -15,13 +15,23 @@
 > et doit établir des faits défendables : d'où vient le message, est-il authentique, que contient-il,
 > quels indicateurs en extraire.
 
+## Clarifications
+
+### Session 2026-10-14
+
+- Q: Comment l'analyste accède-t-il aux en-têtes depuis la lecture d'un message ? → A: Un bouton « Afficher les en-têtes » dans le panneau de lecture déplie/replie l'intégralité des en-têtes bruts du message, sans quitter la vue de lecture (FR-035).
+- Q: La liste des fichiers contenus dans le mail doit-elle être visible sans changer d'onglet ? → A: Oui, la liste des pièces jointes (y compris inline et messages embarqués) est toujours affichée dans le panneau de lecture de chaque message (FR-036).
+- Q: Les URL doivent-elles être listées pour chaque email dès le MVP ? → A: Oui, une liste de toutes les URL présentes dans l'email (en-têtes, corps texte, corps HTML) est affichée dans le panneau de lecture, par message, dès le MVP (FR-037).
+
 ### User Story 1 - Ingérer et lire des preuves sans les altérer (Priority: P1) 🎯 MVP
 
 L'analyste glisse un ou plusieurs fichiers `.eml` / `.msg` (ou un dossier) dans la fenêtre, comme
 dans msg-reader. Chaque fichier est immédiatement haché, puis apparaît dans une liste latérale
 (expéditeur, objet, date, indicateurs « PJ » / « alerte »). En sélectionnant un message, il voit un
 panneau de lecture avec l'en-tête lisible (De, À, Cc, Cci, Objet, Date), le corps rendu de façon
-sûre (HTML neutralisé, images distantes bloquées) et la liste des pièces jointes.
+sûre (HTML neutralisé, images distantes bloquées), un bouton **« Afficher les en-têtes »** qui
+déplie tous les en-têtes bruts, la **liste des fichiers contenus** dans le mail et la **liste de
+toutes les URL** présentes dans le mail.
 
 **Why this priority**: Sans ingestion fiable et lecture sûre, aucune autre analyse n'est possible ;
 c'est aussi l'usage le plus fréquent (« ouvrir le .msg que l'utilisateur a signalé »).
@@ -37,6 +47,9 @@ sont inchangés après fermeture (empreinte et date de modification identiques).
 3. **Given** un fichier déjà chargé, **When** l'analyste le dépose à nouveau (même empreinte), **Then** il n'est pas dupliqué et un avertissement « doublon de la preuve X » s'affiche.
 4. **Given** un fichier corrompu ou qui n'est pas un courriel, **When** il est déposé, **Then** il apparaît dans la liste avec un statut d'erreur explicite et les autres fichiers sont traités normalement.
 5. **Given** un message affiché, **When** l'analyste l'épingle (raccourci clavier ou bouton), **Then** il reste en tête de liste pendant la session et l'épinglage est journalisé.
+6. **Given** un message affiché avec les en-têtes repliés, **When** l'analyste clique sur « Afficher les en-têtes » (ou touche `H`), **Then** tous les en-têtes bruts apparaissent dans leur ordre d'origine avec leur nombre, et le bouton devient « Masquer les en-têtes » ; l'état est conservé quand on passe au message suivant.
+7. **Given** un message contenant 2 pièces jointes et une image inline, **When** il est affiché, **Then** la liste « Fichiers contenus (3) » montre pour chacun nom, type, taille, empreinte SHA-256 et la mention inline/attaché ; un message vide de PJ affiche « Aucun fichier ».
+8. **Given** un message dont le corps HTML contient 3 liens dont un en double et le corps texte une URL supplémentaire, **When** il est affiché, **Then** la liste « URL (3) » montre chaque URL unique une seule fois avec son ou ses emplacements (HTML, texte, en-tête) ; aucune URL n'est cliquable ni ouverte, elles peuvent être copiées.
 
 ---
 
@@ -186,6 +199,10 @@ outil tiers de référence.
 - **FR-008**: Le système DOIT rendre le HTML sans exécution de script, sans requête réseau, sans formulaire actif et sans navigation, et indiquer le nombre de ressources distantes bloquées.
 - **FR-009**: Le système DOIT afficher les images inline référencées par `cid:` à partir des pièces jointes du message.
 - **FR-010**: Le système DOIT reproduire l'ergonomie de msg-reader : liste latérale triable (date, expéditeur, objet), panneau de lecture, épinglage, raccourcis clavier (navigation ↑/↓, épingler, changer d'onglet), thèmes clair/sombre.
+
+- **FR-035**: Le panneau de lecture DOIT comporter un bouton (et un raccourci clavier) « Afficher / Masquer les en-têtes » qui déplie tous les en-têtes bruts du message dans leur ordre d'origine ; repliés par défaut, état mémorisé pendant la session.
+- **FR-036**: Le panneau de lecture DOIT afficher pour chaque message la liste de tous les fichiers contenus (pièces jointes, images inline, messages embarqués) avec nom, type, taille et SHA-256, ou « Aucun fichier ».
+- **FR-037**: Le panneau de lecture DOIT afficher pour chaque message la liste dédoublonnée de toutes les URL présentes (en-têtes, corps texte, attributs du corps HTML) avec leur emplacement ; les URL ne sont jamais ouvertes par l'outil et sont copiables (brutes ou défangées).
 
 **En-têtes & authenticité**
 

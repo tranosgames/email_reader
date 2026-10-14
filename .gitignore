@@ -3,3 +3,5 @@ node_modules/
 dist/
 *.mfcase.json
 /tests/corpus/private/
+apps/desktop/public/demo/
+apps/desktop/src-tauri/gen/

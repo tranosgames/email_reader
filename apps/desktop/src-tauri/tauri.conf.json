@@ -1,0 +1,41 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "MailForensics",
+  "version": "0.1.0",
+  "identifier": "com.pubtranos.mailforensics",
+  "build": {
+    "frontendDist": "../dist",
+    "devUrl": "http://localhost:5173",
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build"
+  },
+  "app": {
+    "windows": [
+      { "title": "MailForensics", "width": 1360, "height": 860, "minWidth": 900, "minHeight": 560, "dragDropEnabled": true }
+    ],
+    "security": {
+      "csp": {
+        "default-src": "'self'",
+        "script-src": "'self'",
+        "style-src": "'self' 'unsafe-inline'",
+        "img-src": "'self' data:",
+        "font-src": "'self'",
+        "connect-src": "ipc: http://ipc.localhost",
+        "frame-src": "'self'",
+        "object-src": "'none'",
+        "base-uri": "'none'",
+        "form-action": "'none'"
+      },
+      "freezePrototype": true
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": ["icons/icon.png"],
+    "fileAssociations": [
+      { "ext": ["eml"], "mimeType": "message/rfc822", "description": "Courriel (EML)", "role": "Viewer" },
+      { "ext": ["msg"], "mimeType": "application/vnd.ms-outlook", "description": "Message Outlook (MSG)", "role": "Viewer" }
+    ]
+  }
+}

@@ -88,6 +88,8 @@ crates/
 │   └── src/{hops.rs, auth.rs, dkim.rs, rules/, attachments.rs, iocs.rs, html.rs, defang.rs}
 ├── mf-report/                # rapport HTML (askama) + JSON, export PJ + manifeste, export IOC
 │   └── src/{lib.rs, json.rs, html.rs, export.rs}  templates/report.html
+├── mf-engine/                # point d'entrée unique : ouvrir → hacher → parser → analyser ; PJ .msg/.eml ouvertes récursivement
+│   └── src/lib.rs
 └── mf-cli/                   # binaire `mf` (clap) — couche mince
     └── src/main.rs
 apps/
@@ -101,7 +103,8 @@ apps/
         ├── UIManager.ts      # rendu liste + panneau + onglets
         ├── views/{reading.ts, headers.ts, attachments.ts, iocs.ts, raw.ts, notes.ts, timeline.ts}
         ├── ipc.ts            # wrappers typés des commandes Tauri
-        └── styles.css        # Tailwind, thèmes clair/sombre
+        ├── dom.ts            # construction DOM sans innerHTML
+        └── styles.css        # CSS natif à variables, clair/sombre selon le système, polices embarquées (hors-ligne)
 tests/
 ├── corpus/{eml/, msg/, nested/, malformed/, expected/}
 └── integration/              # tests transverses (intégrité, déterminisme, concordance oracle)
@@ -115,7 +118,7 @@ crates suit les frontières de format (`mf-eml`, `mf-msg`, plus tard `mf-pst`) e
 Le frontend reproduit volontairement les modules de msg-reader (`FileHandler`, `MessageHandler`,
 `UIManager`, `main`) pour faciliter la transposition de son design.
 
-Graphe de dépendances : `mf-core` ← `mf-eml`, `mf-msg`, `mf-analysis` ← `mf-report` ← `mf-cli`, `src-tauri`.
+Graphe de dépendances : `mf-core` ← `mf-eml`, `mf-msg`, `mf-analysis` ← `mf-engine` (← `mf-report`) ← `mf-cli`, `src-tauri`. `mf-engine` a été ajouté à l'implémentation (2026-10-14) pour que la CLI et l'app partagent le même chemin d'ouverture ; Tailwind a été écarté au profit de CSS natif (moins d'outillage, Constitution VII).
 
 ## Complexity Tracking
 

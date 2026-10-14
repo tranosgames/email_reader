@@ -1,0 +1,17 @@
+[package]
+name = "mf-engine"
+description = "MailForensics : orchestration ouverture + analyse"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+mf-core.workspace = true
+mf-eml.workspace = true
+mf-msg.workspace = true
+mf-analysis.workspace = true
+serde.workspace = true
+
+[dev-dependencies]
+msg_parser.workspace = true

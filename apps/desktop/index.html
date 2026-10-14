@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MailForensics</title>
+  </head>
+  <body>
+    <div id="app">
+      <aside class="list-pane" aria-label="Messages chargés">
+        <div class="list-toolbar">
+          <button id="open-files" class="btn btn-primary" type="button">Ouvrir des fichiers</button>
+          <button id="open-folder" class="btn" type="button">Ouvrir un dossier</button>
+        </div>
+        <div id="list-status" class="list-status" role="status" aria-live="polite"></div>
+        <ul id="message-list" class="message-list" role="listbox" aria-label="Messages"></ul>
+      </aside>
+      <main id="reading" class="reading-pane" tabindex="-1" aria-live="polite"></main>
+    </div>
+    <div id="drop-overlay" class="drop-overlay" hidden>
+      <p>Relâchez pour analyser. Les fichiers ne sont jamais modifiés.</p>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
