@@ -111,6 +111,35 @@ pub fn evidence_from_bytes(path: &str, data: &[u8]) -> Evidence {
     }
 }
 
+/// Nom de fichier sûr pour l'enregistrement d'une pièce jointe (FR-038) : sans chemin, sans
+/// caractères de contrôle ni de direction (U+202E « RLO » qui maquille `exe.pdf` en `fdp.exe`),
+/// sans nom réservé Windows. Le nom d'origine reste affiché tel quel dans l'interface.
+pub fn safe_file_name(name: &str) -> String {
+    let base = name.rsplit(['/', '\\']).next().unwrap_or(name);
+    let cleaned: String = base
+        .chars()
+        .filter(|c| {
+            !c.is_control()
+                && !matches!(c, '\u{200E}' | '\u{200F}' | '\u{202A}'..='\u{202E}' | '\u{2066}'..='\u{2069}')
+        })
+        .map(|c| if matches!(c, '<' | '>' | ':' | '"' | '|' | '?' | '*') { '_' } else { c })
+        .collect();
+    let trimmed = cleaned.trim().trim_matches('.').trim();
+    let mut out: String = trimmed.chars().take(200).collect();
+    if out.is_empty() {
+        out = "piece-jointe".to_string();
+    }
+    let stem = out.split('.').next().unwrap_or("").to_ascii_uppercase();
+    let reserved = ["CON", "PRN", "AUX", "NUL"].contains(&stem.as_str())
+        || (stem.len() == 4
+            && (stem.starts_with("COM") || stem.starts_with("LPT"))
+            && stem.as_bytes()[3].is_ascii_digit());
+    if reserved {
+        out.insert(0, '_');
+    }
+    out
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -123,6 +152,17 @@ mod tests {
             "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
         );
         assert_eq!(m, "900150983cd24fb0d6963f7d28e17f72");
+    }
+
+    #[test]
+    fn safe_file_names() {
+        assert_eq!(safe_file_name("../../etc/passwd"), "passwd");
+        assert_eq!(safe_file_name("C:\\Windows\\evil.exe"), "evil.exe");
+        assert_eq!(safe_file_name("facture\u{202E}fdp.exe"), "facturefdp.exe");
+        assert_eq!(safe_file_name("a\tb\r\n.txt"), "ab.txt");
+        assert_eq!(safe_file_name("CON.txt"), "_CON.txt");
+        assert_eq!(safe_file_name("..."), "piece-jointe");
+        assert_eq!(safe_file_name("rapport: 2026?.pdf"), "rapport_ 2026_.pdf");
     }
 
     #[test]

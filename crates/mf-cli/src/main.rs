@@ -42,6 +42,19 @@ enum Cmd {
     },
     /// Fichiers contenus (arborescence des messages embarqués).
     Attachments { file: PathBuf },
+    /// Enregistre une pièce jointe (octets d'origine, nom assaini) dans un dossier.
+    Extract {
+        file: PathBuf,
+        /// Numéro de la pièce jointe (colonne « n. » de `mf attachments`).
+        #[arg(long)]
+        index: u32,
+        /// Message embarqué contenant la PJ, ex. « 1 ».
+        #[arg(long)]
+        path: Option<String>,
+        /// Dossier de destination (ne doit pas être celui de la preuve).
+        #[arg(long)]
+        out: PathBuf,
+    },
     /// URL uniques du message, avec emplacements.
     Urls {
         file: PathBuf,
@@ -242,6 +255,41 @@ fn run(cli: Cli) -> Result<(), String> {
             }
             println!("Fichiers contenus ({})", a.message.attachments.len());
             print_attachments(&a.message, 1);
+        }
+        Cmd::Extract {
+            file,
+            index,
+            path,
+            out: dir,
+        } => {
+            let evidence_dir = std::fs::canonicalize(&file)
+                .ok()
+                .and_then(|p| p.parent().map(PathBuf::from));
+            std::fs::create_dir_all(&dir).map_err(|e| format!("{}: {e}", dir.display()))?;
+            if evidence_dir.is_some() && std::fs::canonicalize(&dir).ok() == evidence_dir {
+                return Err(
+                    "destination refusée : ne pas écrire dans le dossier de la preuve".into(),
+                );
+            }
+            let a = mf_engine::open(&file).map_err(|e| e.to_string())?;
+            let x = mf_engine::extract_attachment(&a.message, &parse_path(&path)?, index)
+                .map_err(|e| e.to_string())?;
+            let dest = dir.join(&x.file_name);
+            if dest.exists() {
+                return Err(format!("{} existe déjà", dest.display()));
+            }
+            std::fs::write(&dest, &x.data).map_err(|e| format!("{}: {e}", dest.display()))?;
+            if cli.json {
+                return out(
+                    &serde_json::json!({ "written": dest.display().to_string(), "sha256": x.sha256, "size": x.data.len() }),
+                );
+            }
+            println!(
+                "{}  ({}, sha256 {})",
+                dest.display(),
+                human(x.data.len() as u64),
+                x.sha256
+            );
         }
         Cmd::Urls { file, path, defang } => {
             let a = mf_engine::open(&file).map_err(|e| e.to_string())?;

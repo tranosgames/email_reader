@@ -3,6 +3,7 @@
 #![forbid(unsafe_code)]
 #![deny(clippy::unwrap_used, clippy::panic)]
 
+pub use mf_core::safe_file_name;
 use mf_core::{EngineError, Evidence, Format, Message};
 use serde::Serialize;
 use std::path::Path;
@@ -42,6 +43,48 @@ fn analyze_evidence(evidence: Evidence, bytes: &[u8]) -> Result<Analyzed, Engine
     expand_attached_messages(&mut message, 0);
     mf_analysis::analyze(&mut message);
     Ok(Analyzed { evidence, message })
+}
+
+/// Pièce jointe extraite, prête à être enregistrée (FR-038).
+#[derive(Debug)]
+pub struct Extracted {
+    /// Nom assaini (voir `mf_core::safe_file_name`).
+    pub file_name: String,
+    pub declared_mime: Option<String>,
+    pub sha256: String,
+    pub data: Vec<u8>,
+}
+
+/// Extrait la PJ `index` du message désigné par `path` ; l'empreinte est revérifiée.
+pub fn extract_attachment(
+    root: &Message,
+    path: &[u32],
+    index: u32,
+) -> Result<Extracted, EngineError> {
+    let msg = descend(root, path)
+        .ok_or_else(|| EngineError::Parse("message embarqué introuvable".into()))?;
+    let att = msg
+        .attachments
+        .iter()
+        .find(|a| a.index == index)
+        .ok_or_else(|| EngineError::Parse(format!("pièce jointe {index} introuvable")))?;
+    if !att.extractable {
+        return Err(EngineError::Parse(
+            "message Outlook embarqué (objet MAPI) : il n'existe pas de fichier d'origine à extraire".into(),
+        ));
+    }
+    let (sha256, _) = mf_core::hashes(&att.data);
+    if sha256 != att.sha256 {
+        return Err(EngineError::Parse(
+            "empreinte divergente : extraction refusée".into(),
+        ));
+    }
+    Ok(Extracted {
+        file_name: mf_core::safe_file_name(&att.filename),
+        declared_mime: att.declared_mime.clone(),
+        sha256,
+        data: att.data.clone(),
+    })
 }
 
 /// Parcourt un message et ses messages embarqués selon un chemin d'indices de PJ (`[2, 1]`).

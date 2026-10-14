@@ -27,6 +27,8 @@ export interface Attachment {
   disposition: "inline" | "attachment" | "unknown";
   content_id: string | null;
   embedded: Message | null;
+  /** Faux pour un message Outlook embarqué (objet MAPI) : pas de fichier d'origine. */
+  extractable: boolean;
 }
 
 export type UrlLocation =
@@ -116,15 +118,33 @@ export interface WebFile {
 export const WEB_MAX_SIZE = 500 * 1024 * 1024;
 
 const webViews: MessageView[] = [];
+/** Clé des octets de chaque preuve dans le worker (même indice que webViews). */
+const webKeys: number[] = [];
 let worker: Worker | null = null;
 let nextJob = 0;
-const pending = new Map<number, (r: { ok: boolean; view?: MessageView; error?: string }) => void>();
+interface WorkerReply {
+  ok: boolean;
+  view?: MessageView;
+  key?: number;
+  data?: ArrayBuffer;
+  name?: string;
+  error?: string;
+}
+const pending = new Map<number, (r: WorkerReply) => void>();
+
+function ask(job: Record<string, unknown>, transfer: Transferable[] = []): Promise<WorkerReply> {
+  const id = nextJob++;
+  return new Promise((resolve) => {
+    pending.set(id, resolve);
+    engine().postMessage({ ...job, id }, transfer);
+  });
+}
 
 function engine(): Worker {
   if (!worker) {
     worker = createEngineWorker();
     worker.onmessage = (e: MessageEvent) => {
-      const d = e.data as { id?: number; ok: boolean; view?: MessageView; error?: string };
+      const d = e.data as WorkerReply & { id?: number };
       if (d.id === undefined) {
         // Module prêt : plus aucune ressource ne sera demandée au serveur (FR-W02).
         document.documentElement.dataset.engine = (e.data as { version?: string }).version ?? "ready";
@@ -143,13 +163,9 @@ export function warmUp(): void {
   if (!inTauri) engine();
 }
 
-async function analyzeInWorker(name: string, file: File): Promise<{ ok: boolean; view?: MessageView; error?: string }> {
+async function analyzeInWorker(name: string, file: File): Promise<WorkerReply> {
   const bytes = await file.arrayBuffer();
-  const id = nextJob++;
-  return new Promise((resolve) => {
-    pending.set(id, resolve);
-    engine().postMessage({ id, name, bytes }, [bytes]); // transfert sans copie
-  });
+  return ask({ kind: "analyze", name, bytes }, [bytes]); // transfert sans copie
 }
 
 /** Même résumé que le backend Tauri (src-tauri/src/main.rs › summary). */
@@ -190,8 +206,10 @@ async function openWebFiles(files: WebFile[]): Promise<OpenResult[]> {
     const of = webViews.findIndex((v) => v.evidence.sha256 === view.evidence.sha256);
     if (of >= 0) {
       results.push({ kind: "duplicate", path, of });
+      void ask({ kind: "release", key: r.key });
     } else {
       webViews.push(view);
+      webKeys.push(r.key ?? -1);
       results.push({ kind: "ready", summary: summarize(webViews.length - 1, view) });
     }
   }
@@ -214,6 +232,41 @@ export async function getMessage(id: number, path: number[]): Promise<MessageVie
 
 export async function initialPaths(): Promise<string[]> {
   return inTauri ? invoke<string[]>("initial_paths") : [];
+}
+
+/** Boîte de confirmation système : `ask` natif (bureau) ou `window.confirm` (web). */
+export async function confirmBox(message: string, title: string): Promise<boolean> {
+  if (!inTauri) return window.confirm(`${title}\n\n${message}`);
+  const { ask: nativeAsk } = await import("@tauri-apps/plugin-dialog");
+  return nativeAsk(message, { title, kind: "warning", okLabel: "Télécharger", cancelLabel: "Annuler" });
+}
+
+/**
+ * FR-038 : enregistre la pièce jointe `index` du message `path` de la preuve `id`.
+ * Bureau : dialogue d'enregistrement natif puis écriture par le moteur.
+ * Web : octets extraits par le worker, téléchargement via Blob (aucune requête réseau).
+ * Retourne le nom enregistré, ou null si l'analyste a annulé le choix d'emplacement.
+ */
+export async function saveAttachment(id: number, path: number[], att: Attachment): Promise<string | null> {
+  if (inTauri) {
+    const { save } = await import("@tauri-apps/plugin-dialog");
+    const dest = await save({ defaultPath: att.filename.replace(/[\\/]/g, "_"), title: "Enregistrer la pièce jointe" });
+    if (!dest) return null;
+    await invoke<string>("save_attachment", { id, path, index: att.index, dest });
+    return dest;
+  }
+  const r = await ask({ kind: "extract", key: webKeys[id], path, index: att.index, filename: att.filename });
+  if (!r.ok || !r.data) throw new Error(r.error ?? "extraction impossible");
+  // application/octet-stream : le navigateur enregistre sans tenter d'ouvrir ni d'afficher.
+  const url = URL.createObjectURL(new Blob([r.data], { type: "application/octet-stream" }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = r.name ?? "piece-jointe";
+  document.body.append(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 10_000);
+  return link.download;
 }
 
 /** Dialogue natif (bureau) ; côté web, FileHandler utilise un <input type="file">. */

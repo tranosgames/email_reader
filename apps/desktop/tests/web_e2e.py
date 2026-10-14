@@ -11,6 +11,7 @@ Vérifie, dans un vrai navigateur :
 """
 
 import functools
+import hashlib
 import http.server
 import json
 import pathlib
@@ -65,7 +66,7 @@ def main() -> int:
 
     with sync_playwright() as pw:
         browser = pw.chromium.launch()
-        ctx = browser.new_context(viewport={"width": 1440, "height": 920})
+        ctx = browser.new_context(viewport={"width": 1440, "height": 920}, accept_downloads=True)
         page = ctx.new_page()
         requests: list[str] = []
         page.on("request", lambda r: requests.append(r.url))
@@ -103,8 +104,37 @@ def main() -> int:
             check(names == [a["filename"] for a in msg["attachments"]], f"{name} : fichiers contenus {names}")
             hashes = files.locator(".file-hash").all_inner_texts()
             check(all(a["sha256"] in h for a, h in zip(msg["attachments"], hashes)), f"{name} : SHA-256 des fichiers")
+            check(all(a["md5"] in h for a, h in zip(msg["attachments"], hashes)), f"{name} : MD5 visibles sans survol")
             urls = page.locator(".url-text").all_inner_texts()
             check(urls == [u["url"] for u in msg["urls"]], f"{name} : {len(urls)} URL identiques")
+
+        # FR-038 : téléchargement avec boîte de confirmation.
+        page.locator(".message-item", has_text="Urgent : mot de passe").click()
+        page.wait_for_selector("button.download")
+        seen: list[str] = []
+        downloads: list[object] = []
+        page.on("download", lambda d: downloads.append(d))
+
+        def refuse(d):
+            seen.append(d.message)
+            d.dismiss()
+
+        page.once("dialog", refuse)
+        page.click("button.download")
+        page.wait_for_timeout(800)
+        check(bool(seen) and "facture.pdf.exe" in seen[0] and "malveillant" in seen[0], "confirmation : nom et avertissement affichés")
+        check("34b9348ecccb09747637e5bdaa744e48362a9e684b260766e49868f2e50cecab" in (seen[0] if seen else ""), "confirmation : SHA-256 affiché")
+        check(not downloads, "Annuler : aucun fichier téléchargé")
+        page.once("dialog", lambda d: d.accept())
+        with page.expect_download() as dl:
+            page.click("button.download")
+        saved = dl.value.path()
+        digest = hashlib.sha256(pathlib.Path(saved).read_bytes()).hexdigest()
+        check(dl.value.suggested_filename == "facture.pdf.exe", f"OK : fichier proposé « {dl.value.suggested_filename} »")
+        check(digest == "34b9348ecccb09747637e5bdaa744e48362a9e684b260766e49868f2e50cecab", "OK : SHA-256 du fichier téléchargé identique")
+        page.locator(".message-item", has_text="Test Email").click()
+        check(page.locator("button.download").nth(0).is_disabled(), "objet MAPI embarqué : téléchargement indisponible")
+        check(page.locator("button.download").nth(2).is_enabled(), ".msg joint : téléchargeable")
 
         # Bouton des en-têtes (touche H) sur le message de phishing.
         page.locator(".message-item", has_text="Urgent : mot de passe").click()

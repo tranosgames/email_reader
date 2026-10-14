@@ -9,6 +9,8 @@ export interface ReadingActions {
   path: number[];
   onToggleHeaders: () => void;
   onOpenEmbedded: (index: number) => void;
+  /** FR-038 : téléchargement après confirmation. */
+  onDownload: (attachment: Attachment) => void;
   onGoToDepth: (depth: number) => void;
 }
 
@@ -239,14 +241,35 @@ function filesSection(files: Attachment[], a: ReadingActions): HTMLElement {
             h("span", {}, humanSize(f.size)),
             f.disposition === "inline" ? h("span", { class: "tag-inline" }, "inline") : h("span", {}, "attaché"),
           ),
-          h("div", { class: "file-hash", title: `MD5 ${f.md5}` }, `SHA-256 ${f.sha256}`),
-          f.embedded
-            ? h(
-                "button",
-                { class: "btn btn-small open-embedded", type: "button", onclick: () => a.onOpenEmbedded(f.index) },
-                `Ouvrir le message joint (${f.embedded.attachments.length} fichier(s), ${f.embedded.urls.length} URL)`,
-              )
-            : null,
+          // Les deux empreintes en clair (FR-036) : le MD5 n'est plus caché dans une infobulle.
+          h("dl", { class: "file-hash" }, h("dt", {}, "SHA-256"), h("dd", {}, f.sha256), h("dt", {}, "MD5"), h("dd", {}, f.md5)),
+          h(
+            "div",
+            { class: "file-actions" },
+            f.extractable
+              ? h(
+                  "button",
+                  { class: "btn btn-small download", type: "button", onclick: () => a.onDownload(f) },
+                  "Télécharger",
+                )
+              : h(
+                  "button",
+                  {
+                    class: "btn btn-small download",
+                    type: "button",
+                    disabled: true,
+                    title: "Message Outlook embarqué : il n'existe pas de fichier d'origine à extraire. Ouvrez-le pour consulter son contenu.",
+                  },
+                  "Téléchargement indisponible",
+                ),
+            f.embedded
+              ? h(
+                  "button",
+                  { class: "btn btn-small open-embedded", type: "button", onclick: () => a.onOpenEmbedded(f.index) },
+                  `Ouvrir le message joint (${f.embedded.attachments.length} fichier(s), ${f.embedded.urls.length} URL)`,
+                )
+              : null,
+          ),
         ),
       ),
     ),

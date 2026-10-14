@@ -67,6 +67,8 @@ pub struct Attachment {
     pub content_id: Option<String>,
     /// Message embarqué (message/rfc822 ou MSG imbriqué), analysé récursivement.
     pub embedded: Option<Box<Message>>,
+    /// Faux pour un message Outlook embarqué en objet MAPI : il n'a pas de fichier d'origine (FR-038).
+    pub extractable: bool,
     /// Contenu décodé ; jamais sérialisé (export à la demande uniquement).
     #[serde(skip)]
     pub data: Vec<u8>,

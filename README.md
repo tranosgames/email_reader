@@ -55,7 +55,8 @@ npm run tauri build        # installeurs .msi/.exe, .dmg, .deb/.AppImage
 Déposez des `.eml` / `.msg` (ou un dossier) dans la fenêtre. Pour chaque message :
 
 - **Afficher les en-têtes** (bouton ou touche `H`) déplie tous les en-têtes bruts, dans l'ordre d'origine ; l'état reste mémorisé d'un message à l'autre.
-- **Fichiers contenus** liste chaque pièce jointe (nom, type, taille, inline/attaché, SHA-256) ; un message joint (`.eml`, `.msg`) s'ouvre avec **Ouvrir le message joint**, qui affiche ses propres en-têtes, fichiers et URL.
+- **Fichiers contenus** liste chaque pièce jointe (nom, type, taille, inline/attaché, SHA-256 et MD5) ; un message joint (`.eml`, `.msg`) s'ouvre avec **Ouvrir le message joint**, qui affiche ses propres en-têtes, fichiers et URL.
+- **Télécharger** (sous chaque fichier) ouvre une boîte de confirmation rappelant nom, type, taille, SHA-256 et le risque ; le fichier enregistré est identique octet pour octet à celui du message, sous un nom assaini. Un message Outlook embarqué en objet MAPI n'a pas de fichier d'origine : il s'ouvre mais ne se télécharge pas.
 - **URL** liste toutes les URL du message, dédoublonnées, avec leur emplacement (en-tête, texte, HTML `href`/`src`, CSS) ; elles ne sont jamais cliquables et se copient brutes ou défangées.
 
 Autres raccourcis : `↑`/`↓` changer de message, `P` épingler, `Échap` revenir au message parent.
@@ -83,9 +84,10 @@ cargo build --release
 ./target/release/mf urls suspect.msg --defang
 ./target/release/mf attachments suspect.msg          # arborescence des messages joints
 ./target/release/mf show suspect.msg --path 3 --json # message joint n°3, en JSON
+./target/release/mf extract suspect.eml --index 1 --out ./pj   # enregistre la PJ n°1
 ```
 
-**Tests** : `cargo test` (17 tests : corpus, concordance avec `msg_parser`, parité fichier / octets) et `npm run test:web`.
+**Tests** : `cargo test` (20 tests : corpus, concordance avec `msg_parser`, parité fichier / octets) et `npm run test:web`.
 
 ## Continuer
 

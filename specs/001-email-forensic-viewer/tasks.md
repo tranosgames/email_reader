@@ -109,6 +109,16 @@ Workspace Cargo : `crates/mf-*/src/`, app : `apps/desktop/`, tests transverses :
 - [x] T096 [US1] Frontend : section « Fichiers contenus (n) » dans `apps/desktop/src/views/reading.ts`
 - [x] T097 [US1] Frontend : section « URL (n) » avec emplacement, copie brute/défangée, jamais cliquable, dans `apps/desktop/src/views/reading.ts`
 
+### Ajouts clarification 2026-10-14 (2) — FR-036 (MD5 visible), FR-038 (téléchargement confirmé)
+
+- [x] T098 [P] [US1] Test : extraction d'une PJ (racine et message embarqué) identique octet pour octet, SHA-256 revérifié, nom assaini (`../`, U+202E, contrôles), objet MAPI embarqué refusé, dans `crates/mf-engine/tests/corpus.rs`
+- [x] T099 [US1] `mf_engine::extract_attachment(bytes, path, index)` + `mf_core::safe_file_name` dans `crates/mf-engine/src/lib.rs`, `crates/mf-core/src/lib.rs`
+- [x] T100 [P] [US1] CLI `mf extract <preuve> --index N [--path …] --out <dossier>` dans `crates/mf-cli/src/main.rs`
+- [x] T101 [US1] Bureau : commande Tauri `save_attachment` (dialogue d'enregistrement natif, écriture par le moteur, refus si la destination est le dossier de la preuve) + confirmation `ask` dans `apps/desktop/src-tauri/src/main.rs`
+- [x] T102 [US1] Web : fonction wasm `extract_attachment`, le worker conserve les octets de chaque preuve, confirmation `window.confirm`, téléchargement via Blob
+- [x] T103 [US1] Interface : MD5 affiché en clair, bouton « Télécharger » par fichier, désactivé avec explication pour un objet MAPI, dans `apps/desktop/src/views/reading.ts`
+- [x] T104 [US1] E2E web : annulation → aucun téléchargement ; confirmation → fichier téléchargé au SHA-256 attendu
+
 **Checkpoint**: User Story 1 fonctionnelle et testable seule — MVP « lecteur forensic sûr ».
 
 ---
@@ -340,7 +350,7 @@ Task: "T031 Sanitisation HTML dans crates/mf-analysis/src/html.rs"
 | FR-016 | T051, T055, T057 | | FR-033 | T034, T086 |
 | FR-017 | T053, T057 | | FR-034 | T009, T024, T084 |
 | FR-035 | T095 | | FR-036 | T093, T094, T096 |
-| FR-037 | T091, T092, T097 | | | |
+| FR-037 | T091, T092, T097 | | FR-038 | T098–T104 |
 
 ---
 

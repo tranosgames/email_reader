@@ -234,6 +234,7 @@ fn convert(node: &Node<'_>, depth: usize) -> Message {
             .or_else(|| att.string(PR_ATTACH_FILENAME))
             .or_else(|| att.string(PR_DISPLAY_NAME));
         let embedded_node = att.object(PR_ATTACH_DATA);
+        let embedded_node_is_none = embedded_node.is_none();
         let (data, size, sha256, md5, embedded) = match embedded_node {
             Some(sub) => {
                 // Pas d'octets « fichier » pour un message embarqué : empreinte calculée sur
@@ -285,6 +286,7 @@ fn convert(node: &Node<'_>, depth: usize) -> Message {
                 Disposition::Attachment
             },
             content_id,
+            extractable: embedded_node_is_none,
             embedded,
             data,
         });

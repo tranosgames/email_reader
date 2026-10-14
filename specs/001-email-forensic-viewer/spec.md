@@ -23,6 +23,9 @@
 - Q: La liste des fichiers contenus dans le mail doit-elle être visible sans changer d'onglet ? → A: Oui, la liste des pièces jointes (y compris inline et messages embarqués) est toujours affichée dans le panneau de lecture de chaque message (FR-036).
 - Q: Les URL doivent-elles être listées pour chaque email dès le MVP ? → A: Oui, une liste de toutes les URL présentes dans l'email (en-têtes, corps texte, corps HTML) est affichée dans le panneau de lecture, par message, dès le MVP (FR-037).
 
+- Q: Pourquoi le survol d'un fichier contenu affiche-t-il le MD5 ? → A: Le MD5 était placé en infobulle du SHA-256, ce qui le rendait invisible sans survol et prêtait à confusion. Les deux empreintes sont désormais affichées en clair, sans infobulle (FR-036).
+- Q: Peut-on récupérer un fichier contenu ? → A: Oui, chaque fichier a un bouton « Télécharger » ; une boîte de confirmation rappelle nom, type, taille, SHA-256 et le risque, et rien n'est écrit sans validation (FR-038).
+
 ### User Story 1 - Ingérer et lire des preuves sans les altérer (Priority: P1) 🎯 MVP
 
 L'analyste glisse un ou plusieurs fichiers `.eml` / `.msg` (ou un dossier) dans la fenêtre, comme
@@ -48,6 +51,7 @@ sont inchangés après fermeture (empreinte et date de modification identiques).
 4. **Given** un fichier corrompu ou qui n'est pas un courriel, **When** il est déposé, **Then** il apparaît dans la liste avec un statut d'erreur explicite et les autres fichiers sont traités normalement.
 5. **Given** un message affiché, **When** l'analyste l'épingle (raccourci clavier ou bouton), **Then** il reste en tête de liste pendant la session et l'épinglage est journalisé.
 6. **Given** un message affiché avec les en-têtes repliés, **When** l'analyste clique sur « Afficher les en-têtes » (ou touche `H`), **Then** tous les en-têtes bruts apparaissent dans leur ordre d'origine avec leur nombre, et le bouton devient « Masquer les en-têtes » ; l'état est conservé quand on passe au message suivant.
+9. **Given** une pièce jointe `facture.pdf.exe`, **When** l'analyste clique « Télécharger », **Then** une confirmation affiche nom, taille, SHA-256 et un avertissement ; « Annuler » n'écrit rien ; « OK » enregistre un fichier dont le SHA-256 est identique à celui affiché.
 7. **Given** un message contenant 2 pièces jointes et une image inline, **When** il est affiché, **Then** la liste « Fichiers contenus (3) » montre pour chacun nom, type, taille, empreinte SHA-256 et la mention inline/attaché ; un message vide de PJ affiche « Aucun fichier ».
 8. **Given** un message dont le corps HTML contient 3 liens dont un en double et le corps texte une URL supplémentaire, **When** il est affiché, **Then** la liste « URL (3) » montre chaque URL unique une seule fois avec son ou ses emplacements (HTML, texte, en-tête) ; aucune URL n'est cliquable ni ouverte, elles peuvent être copiées.
 
@@ -201,7 +205,8 @@ outil tiers de référence.
 - **FR-010**: Le système DOIT reproduire l'ergonomie de msg-reader : liste latérale triable (date, expéditeur, objet), panneau de lecture, épinglage, raccourcis clavier (navigation ↑/↓, épingler, changer d'onglet), thèmes clair/sombre.
 
 - **FR-035**: Le panneau de lecture DOIT comporter un bouton (et un raccourci clavier) « Afficher / Masquer les en-têtes » qui déplie tous les en-têtes bruts du message dans leur ordre d'origine ; repliés par défaut, état mémorisé pendant la session.
-- **FR-036**: Le panneau de lecture DOIT afficher pour chaque message la liste de tous les fichiers contenus (pièces jointes, images inline, messages embarqués) avec nom, type, taille et SHA-256, ou « Aucun fichier ».
+- **FR-036**: Le panneau de lecture DOIT afficher pour chaque message la liste de tous les fichiers contenus (pièces jointes, images inline, messages embarqués) avec nom, type, taille, SHA-256 et MD5 visibles sans survol, ou « Aucun fichier ».
+- **FR-038**: Chaque fichier contenu DOIT offrir un bouton « Télécharger » qui ouvre une boîte de confirmation (nom, type, taille, SHA-256, avertissement sur le contenu potentiellement malveillant) ; sans confirmation rien n'est écrit. Le fichier enregistré DOIT être octet pour octet celui contenu dans le message (empreinte revérifiée), sous un nom assaini (sans chemin ni caractères de contrôle). Un message Outlook embarqué sans fichier d'origine (objet MAPI) n'est pas téléchargeable et le bouton l'indique.
 - **FR-037**: Le panneau de lecture DOIT afficher pour chaque message la liste dédoublonnée de toutes les URL présentes (en-têtes, corps texte, attributs du corps HTML) avec leur emplacement ; les URL ne sont jamais ouvertes par l'outil et sont copiables (brutes ou défangées).
 
 **En-têtes & authenticité**

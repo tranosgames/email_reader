@@ -18,3 +18,26 @@ pub fn analyze(file_name: &str, bytes: Vec<u8>) -> Result<String, JsError> {
 pub fn engine_version() -> String {
     env!("CARGO_PKG_VERSION").to_string()
 }
+
+/// Octets de la pièce jointe `index` du message désigné par `path` (FR-038), après
+/// revérification de l'empreinte. Le navigateur ne fournit que les octets de la preuve :
+/// le message est ré-analysé, ce qui garantit les mêmes indices que l'affichage.
+#[wasm_bindgen]
+pub fn extract_attachment(
+    file_name: &str,
+    bytes: Vec<u8>,
+    path: Vec<u32>,
+    index: u32,
+) -> Result<Vec<u8>, JsError> {
+    let analyzed =
+        mf_engine::open_bytes(file_name, bytes).map_err(|e| JsError::new(&e.to_string()))?;
+    mf_engine::extract_attachment(&analyzed.message, &path, index)
+        .map(|x| x.data)
+        .map_err(|e| JsError::new(&e.to_string()))
+}
+
+/// Nom de fichier assaini proposé à l'enregistrement (même règle que le bureau et la CLI).
+#[wasm_bindgen]
+pub fn safe_file_name(name: &str) -> String {
+    mf_engine::safe_file_name(name)
+}

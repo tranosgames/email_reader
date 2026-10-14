@@ -240,3 +240,28 @@ fn open_bytes_matches_open_path() {
         assert_eq!(from_path, from_bytes, "{}", f.display());
     }
 }
+
+/// T098 / FR-038 : extraction octet pour octet, y compris dans un message embarqué.
+#[test]
+fn extract_attachments() {
+    let a = mf_engine::open(&corpus("eml/phishing-basic.eml")).expect("ouverture");
+    let x = mf_engine::extract_attachment(&a.message, &[], 1).expect("extraction");
+    assert_eq!(x.file_name, "facture.pdf.exe");
+    assert_eq!(x.sha256, a.message.attachments[0].sha256);
+    assert_eq!(&x.data[..2], b"MZ");
+
+    let n = mf_engine::open(&corpus("nested/eml-in-eml.eml")).expect("ouverture");
+    let inner = mf_engine::extract_attachment(&n.message, &[1], 1).expect("PJ du message joint");
+    assert_eq!(inner.file_name, "facture.zip");
+    let whole = mf_engine::extract_attachment(&n.message, &[], 1).expect("le .eml joint lui-même");
+    assert!(whole.data.starts_with(b"From:"));
+
+    // Objet MAPI embarqué : pas de fichier d'origine.
+    let m = mf_engine::open(&corpus("msg/test_email.msg")).expect("ouverture");
+    assert!(mf_engine::extract_attachment(&m.message, &[], 1).is_err());
+    // Fichier .msg joint (octets réels) : extractible et ré-ouvrable à l'identique.
+    let joined = mf_engine::extract_attachment(&m.message, &[], 3).expect(".msg joint");
+    let reopened = mf_engine::open_bytes(&joined.file_name, joined.data).expect("ré-ouverture");
+    assert_eq!(reopened.message.subject.as_deref(), Some("Test Email"));
+    assert!(mf_engine::extract_attachment(&m.message, &[], 99).is_err());
+}

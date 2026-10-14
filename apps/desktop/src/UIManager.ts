@@ -1,7 +1,7 @@
 // Rendu de la liste latérale et du panneau de lecture (rôle de UIManager.js dans msg-reader).
 
-import { formatDate, h } from "./dom";
-import { getMessage, type Message, type MessageView } from "./ipc";
+import { formatDate, h, humanSize, toast } from "./dom";
+import { confirmBox, getMessage, saveAttachment, type Attachment, type Message, type MessageView } from "./ipc";
 import type { MessageHandler } from "./MessageHandler";
 import { renderReading, type Crumb } from "./views/reading";
 
@@ -123,9 +123,35 @@ export class UIManager {
         path: s.path,
         onToggleHeaders: () => s.toggleHeaders(),
         onOpenEmbedded: (i) => s.openEmbedded(i),
+        onDownload: (att) => void this.download(root.evidence.path, s.selectedId, [...s.path], att),
         onGoToDepth: (d) => s.goToDepth(d),
       }),
     );
     this.reading.scrollTop = scroll;
+  }
+
+  /** FR-038 : boîte de confirmation, puis enregistrement de la pièce jointe. */
+  private async download(evidencePath: string, id: number | null, path: number[], att: Attachment): Promise<void> {
+    if (id === null) return;
+    const source = evidencePath.split(/[\\/]/).pop() ?? evidencePath;
+    const ok = await confirmBox(
+      [
+        `Fichier : ${att.filename}`,
+        `Type déclaré : ${att.declared_mime ?? "non déclaré"}`,
+        `Taille : ${humanSize(att.size)}`,
+        `SHA-256 : ${att.sha256}`,
+        `Provenance : ${source}${path.length ? ` › PJ ${path.join(" › PJ ")}` : ""} › PJ ${att.index}`,
+        "",
+        "Ce fichier provient d'un courriel suspect et peut être malveillant. Ne l'ouvrez que dans un environnement d'analyse isolé.",
+      ].join("\n"),
+      "Télécharger cette pièce jointe ?",
+    );
+    if (!ok) return;
+    try {
+      const saved = await saveAttachment(id, path, att);
+      if (saved) toast(`Enregistré : ${saved}`);
+    } catch (e) {
+      toast(`Téléchargement impossible : ${e instanceof Error ? e.message : String(e)}`);
+    }
   }
 }

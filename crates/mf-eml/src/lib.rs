@@ -158,6 +158,7 @@ fn convert(msg: &mail_parser::Message<'_>, raw: &[u8], depth: usize) -> Message 
                 .content_id()
                 .map(|c| c.trim_matches(['<', '>']).to_string()),
             embedded,
+            extractable: true,
             data,
         });
     }

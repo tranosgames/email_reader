@@ -143,6 +143,33 @@ fn get_message(
     .map_err(|e| e.to_string())
 }
 
+/// FR-038 : enregistre une pièce jointe à l'emplacement choisi dans le dialogue natif, après
+/// confirmation côté interface. L'écriture est faite par le moteur, jamais par le frontend.
+#[tauri::command]
+fn save_attachment(
+    id: usize,
+    path: Vec<u32>,
+    index: u32,
+    dest: String,
+    state: tauri::State<'_, AppState>,
+) -> Result<String, String> {
+    let loaded = state.loaded.lock().unwrap_or_else(|e| e.into_inner());
+    let a = loaded.get(id).ok_or("preuve inconnue")?;
+    let x = mf_engine::extract_attachment(&a.message, &path, index).map_err(|e| e.to_string())?;
+    let dest = PathBuf::from(dest);
+    let dest_dir = dest.parent().and_then(|d| std::fs::canonicalize(d).ok());
+    let evidence_dir = std::fs::canonicalize(&a.evidence.path)
+        .ok()
+        .and_then(|p| p.parent().map(PathBuf::from));
+    if dest_dir.is_some() && dest_dir == evidence_dir {
+        return Err(
+            "Destination refusée : choisissez un autre dossier que celui de la preuve.".into(),
+        );
+    }
+    std::fs::write(&dest, &x.data).map_err(|e| format!("{}: {e}", dest.display()))?;
+    Ok(x.sha256)
+}
+
 /// Fichiers passés au lancement (association `.eml` / `.msg`, double-clic).
 #[tauri::command]
 fn initial_paths() -> Vec<String> {
