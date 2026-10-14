@@ -1,0 +1,204 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mailforensics.local/schemas/report-v1.json",
+  "title": "MailForensics analysis report v1",
+  "description": "Rapport JSON déterministe (FR-026, SC-005). Les tableaux sont triés : evidence par sha256, messages par (evidence_sha256, provenance), findings par (severity desc, rule_id), iocs par (kind, value).",
+  "type": "object",
+  "required": ["schema_version", "tool", "exported_utc", "evidence", "messages", "audit"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "const": 1 },
+    "tool": {
+      "type": "object",
+      "required": ["name", "version"],
+      "properties": { "name": { "const": "mailforensics" }, "version": { "type": "string" } }
+    },
+    "exported_utc": { "type": "string", "format": "date-time", "description": "Seul champ autorisé à varier entre deux exports identiques" },
+    "case": {
+      "type": "object",
+      "properties": { "case_id": { "type": "string" }, "title": { "type": "string" } }
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "size", "format", "sha256", "md5", "hash_verified_at_export"],
+        "properties": {
+          "path": { "type": "string" },
+          "size": { "type": "integer", "minimum": 0 },
+          "format": { "enum": ["eml", "msg", "pst", "unknown"] },
+          "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+          "md5": { "type": "string", "pattern": "^[0-9a-f]{32}$" },
+          "hash_verified_at_export": { "const": true },
+          "fs_modified": { "type": ["string", "null"], "format": "date-time" }
+        }
+      }
+    },
+    "messages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["evidence_sha256", "provenance", "subject", "from", "to", "date", "hops", "findings", "attachments", "iocs"],
+        "properties": {
+          "evidence_sha256": { "type": "string" },
+          "provenance": { "type": "string", "examples": ["", "PJ 2 › PJ 1"] },
+          "subject": { "$ref": "#/$defs/decoded" },
+          "from": { "type": ["array"], "items": { "$ref": "#/$defs/address" } },
+          "reply_to": { "type": "array", "items": { "$ref": "#/$defs/address" } },
+          "return_path": { "type": ["string", "null"] },
+          "to": { "type": "array", "items": { "$ref": "#/$defs/address" } },
+          "cc": { "type": "array", "items": { "$ref": "#/$defs/address" } },
+          "bcc": { "type": "array", "items": { "$ref": "#/$defs/address" } },
+          "date": { "$ref": "#/$defs/date" },
+          "message_id": { "type": ["string", "null"] },
+          "hops": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["index", "timestamp"],
+              "properties": {
+                "index": { "type": "integer" },
+                "from_host": { "type": ["string", "null"] },
+                "from_ip": { "type": ["string", "null"] },
+                "by_host": { "type": ["string", "null"] },
+                "with_proto": { "type": ["string", "null"] },
+                "timestamp": { "$ref": "#/$defs/date" },
+                "delay_seconds": { "type": ["integer", "null"] }
+              }
+            }
+          },
+          "auth": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["mechanism", "result", "authserv_id"],
+              "properties": {
+                "mechanism": { "enum": ["spf", "dkim", "dmarc", "arc", "other"] },
+                "result": { "type": "string" },
+                "authserv_id": { "type": "string" }
+              }
+            }
+          },
+          "dkim": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "domain": { "type": "string" },
+                "selector": { "type": "string" },
+                "body_hash_ok": { "type": ["boolean", "null"] },
+                "signature_verified": { "const": "not_checked" }
+              }
+            }
+          },
+          "findings": { "type": "array", "items": { "$ref": "#/$defs/finding" } },
+          "attachments": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["index", "filename", "size", "sha256", "md5", "flags"],
+              "properties": {
+                "index": { "type": "integer" },
+                "filename": { "type": "string" },
+                "declared_mime": { "type": ["string", "null"] },
+                "detected_mime": { "type": ["string", "null"] },
+                "size": { "type": "integer" },
+                "sha256": { "type": "string" },
+                "md5": { "type": "string" },
+                "disposition": { "enum": ["inline", "attachment", "unknown"] },
+                "flags": { "type": "array", "items": { "type": "string" } },
+                "embedded_provenance": { "type": ["string", "null"] }
+              }
+            }
+          },
+          "iocs": { "type": "array", "items": { "$ref": "#/$defs/ioc" } },
+          "annotations": {
+            "type": "object",
+            "properties": {
+              "pinned": { "type": "boolean" },
+              "tags": { "type": "array", "items": { "type": "string" } },
+              "notes": { "type": "array", "items": { "type": "object", "properties": { "created_utc": { "type": "string" }, "text": { "type": "string" } } } }
+            }
+          }
+        }
+      }
+    },
+    "audit": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["seq", "ts_utc", "action", "tool_version"],
+        "properties": {
+          "seq": { "type": "integer", "minimum": 1 },
+          "ts_utc": { "type": "string", "format": "date-time" },
+          "action": { "type": "string" },
+          "target": { "type": ["string", "null"] },
+          "sha256": { "type": ["string", "null"] },
+          "detail": { "type": ["string", "null"] },
+          "tool_version": { "type": "string" }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "decoded": {
+      "type": "object",
+      "required": ["decoded", "raw_b64"],
+      "properties": { "decoded": { "type": "string" }, "raw_b64": { "type": "string" }, "charset": { "type": ["string", "null"] } }
+    },
+    "address": {
+      "type": "object",
+      "properties": {
+        "display_name": { "type": ["string", "null"] },
+        "address": { "type": ["string", "null"] },
+        "x500_dn": { "type": ["string", "null"] }
+      }
+    },
+    "date": {
+      "type": "object",
+      "required": ["raw"],
+      "properties": {
+        "raw": { "type": "string" },
+        "utc": { "type": ["string", "null"], "format": "date-time" },
+        "original_offset_minutes": { "type": ["integer", "null"] }
+      }
+    },
+    "finding": {
+      "type": "object",
+      "required": ["rule_id", "severity", "title", "refs"],
+      "properties": {
+        "rule_id": { "type": "string" },
+        "severity": { "enum": ["info", "low", "medium", "high"] },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "refs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["kind"],
+            "properties": {
+              "kind": { "enum": ["header", "mapi_prop", "body", "attachment", "byte_range"] },
+              "header_index": { "type": "integer" },
+              "header_name": { "type": "string" },
+              "mapi_tag": { "type": "string", "pattern": "^0x[0-9A-F]{8}$" },
+              "attachment_index": { "type": "integer" },
+              "start": { "type": "integer" },
+              "end": { "type": "integer" },
+              "excerpt": { "type": ["string", "null"] }
+            }
+          }
+        }
+      }
+    },
+    "ioc": {
+      "type": "object",
+      "required": ["kind", "value", "defanged"],
+      "properties": {
+        "kind": { "enum": ["url", "domain", "ipv4", "ipv6", "email", "hash"] },
+        "value": { "type": "string" },
+        "defanged": { "type": "string" },
+        "locations": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  }
+}
