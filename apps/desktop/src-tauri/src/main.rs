@@ -186,7 +186,8 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             open_paths,
             get_message,
-            initial_paths
+            initial_paths,
+            save_attachment
         ])
         .run(tauri::generate_context!())
         .unwrap_or_else(|e| {
