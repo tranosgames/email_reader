@@ -1,4 +1,4 @@
-# MailForensics
+# MailForensics (`email_reader`)
 
 Outil d'analyse forensic de courriels **EML** et **MSG** (PST/OST prévu), en **Rust**, avec une
 interface de bureau inspirée de [msg-reader](https://github.com/Rasalas/msg-reader) :
@@ -111,3 +111,8 @@ cd spikes/crate-validation && cargo run -- samples/phishing-basic.eml chemin/ver
 2. Pas d'enrichissement externe (WHOIS, VirusTotal) en v1.
 3. Mono-analyste, pas de serveur.
 4. Décodage TNEF (`winmail.dat`) après le MVP.
+
+## Licence
+
+[Apache-2.0](LICENSE). Le design s'inspire de [msg-reader](https://github.com/Rasalas/msg-reader) (MIT) sans en reprendre le code ;
+les fichiers `.msg` du corpus de test proviennent du jeu de test de [msg_parser](https://github.com/marirs/msg-parser-rs) (MIT, voir `tests/corpus/README.md`).
