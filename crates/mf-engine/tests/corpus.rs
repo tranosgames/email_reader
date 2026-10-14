@@ -225,3 +225,18 @@ fn msg_transport_headers() {
     );
     assert!(a.message.headers.iter().any(|h| h.name == "Received"));
 }
+
+/// FR-W05 : l'ouverture depuis des octets (version web) donne exactement le même résultat.
+#[test]
+fn open_bytes_matches_open_path() {
+    for f in all_corpus_files() {
+        let from_path = mf_engine::open(&f)
+            .ok()
+            .map(|a| serde_json::to_string(&a.message).expect("json"));
+        let bytes = std::fs::read(&f).expect("lecture");
+        let from_bytes = mf_engine::open_bytes("x", bytes)
+            .ok()
+            .map(|a| serde_json::to_string(&a.message).expect("json"));
+        assert_eq!(from_path, from_bytes, "{}", f.display());
+    }
+}

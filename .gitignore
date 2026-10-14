@@ -5,3 +5,6 @@ dist/
 /tests/corpus/private/
 apps/desktop/public/demo/
 apps/desktop/src-tauri/gen/
+apps/desktop/src/wasm/
+apps/desktop/dist-web/
+apps/desktop/test-results/

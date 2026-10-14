@@ -1,5 +1,5 @@
 //! Point d'entrée unique du moteur : ouvrir une preuve, la parser et l'analyser.
-//! Utilisé à l'identique par la CLI `mf` et l'application de bureau (Constitution III).
+//! Utilisé à l'identique par la CLI `mf`, l'application de bureau et la version web (Constitution III).
 #![forbid(unsafe_code)]
 #![deny(clippy::unwrap_used, clippy::panic)]
 
@@ -17,9 +17,25 @@ pub struct Analyzed {
 /// Lit (lecture seule), hache, parse et analyse un fichier `.eml` ou `.msg`.
 pub fn open(path: &Path) -> Result<Analyzed, EngineError> {
     let (evidence, bytes) = mf_core::read_evidence(path)?;
+    analyze_evidence(evidence, &bytes)
+}
+
+/// Même traitement à partir d'octets déjà lus (version web). `name` sert d'étiquette de preuve.
+pub fn open_bytes(name: &str, bytes: Vec<u8>) -> Result<Analyzed, EngineError> {
+    if bytes.len() as u64 > mf_core::MAX_EVIDENCE_SIZE {
+        return Err(EngineError::TooLarge {
+            size: bytes.len() as u64,
+            max: mf_core::MAX_EVIDENCE_SIZE,
+        });
+    }
+    let evidence = mf_core::evidence_from_bytes(name, &bytes);
+    analyze_evidence(evidence, &bytes)
+}
+
+fn analyze_evidence(evidence: Evidence, bytes: &[u8]) -> Result<Analyzed, EngineError> {
     let mut message = match evidence.format {
-        Format::Eml => mf_eml::parse(&bytes, 0)?,
-        Format::Msg => mf_msg::parse(&bytes)?,
+        Format::Eml => mf_eml::parse(bytes, 0)?,
+        Format::Msg => mf_msg::parse(bytes)?,
         Format::Pst => return Err(EngineError::Parse("PST : prévu dans la feature 002".into())),
         Format::Unknown => return Err(EngineError::UnknownFormat),
     };

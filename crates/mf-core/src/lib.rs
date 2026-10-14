@@ -91,16 +91,24 @@ pub fn read_evidence(path: &Path) -> Result<(Evidence, Vec<u8>), EngineError> {
     }
     let mut data = Vec::with_capacity(usize::try_from(size).unwrap_or(0));
     file.read_to_end(&mut data).map_err(io)?;
-    let (sha256, md5) = hashes(&data);
-    let evidence = Evidence {
-        path: path.display().to_string(),
+    let evidence = evidence_from_bytes(&path.display().to_string(), &data);
+    Ok((evidence, data))
+}
+
+/// Identification d'une preuve dont les octets ont déjà été lus (version web : le navigateur
+/// fournit le contenu). `path` est l'étiquette affichée (chemin relatif côté web).
+pub fn evidence_from_bytes(path: &str, data: &[u8]) -> Evidence {
+    let (sha256, md5) = hashes(data);
+    Evidence {
+        path: path.to_string(),
         size: data.len() as u64,
         sha256,
         md5,
-        format: detect_format(&data),
-        declared_extension: path.extension().map(|e| e.to_string_lossy().to_lowercase()),
-    };
-    Ok((evidence, data))
+        format: detect_format(data),
+        declared_extension: Path::new(path)
+            .extension()
+            .map(|e| e.to_string_lossy().to_lowercase()),
+    }
 }
 
 #[cfg(test)]

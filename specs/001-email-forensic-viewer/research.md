@@ -122,6 +122,9 @@
   rendu HTML), web pur comme la version GitHub Pages de msg-reader (impossible de garantir
   hors-ligne/lecture seule et de hacher de gros fichiers efficacement).
 
+> **Révisé le 2026-10-14 (feature 003)** : une version web locale est ajoutée en plus de Tauri ; le moteur
+> compilé en WebAssembly lève les objections « hors-ligne » et « hachage » (voir `specs/003-web-version/research.md`).
+
 ## R10 — Recherche, persistance, rapport
 
 - **Decision** : index en mémoire (normalisation minuscule + recherche par sous-chaîne sur

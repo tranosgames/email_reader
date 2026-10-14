@@ -4,8 +4,12 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "wasm": "sh scripts/build-wasm.sh",
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
+    "dev:web": "npm run wasm && vite --mode web",
+    "build:web": "npm run wasm && tsc --noEmit && vite build --mode web",
+    "test:web": "python3 tests/web_e2e.py",
     "tauri": "tauri"
   },
   "dependencies": {
@@ -16,6 +20,7 @@
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.12.0",
+    "@types/node": "^22.20.5",
     "typescript": "^5.9.0",
     "vite": "^7.1.0"
   }

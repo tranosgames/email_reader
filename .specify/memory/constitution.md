@@ -1,5 +1,13 @@
 <!--
-Sync Impact Report
+Sync Impact Report (amendement 2026-10-14)
+- Version: 1.0.0 → 1.1.0 (MINOR : nouvelle cible d'interface)
+- Modifié : Contraintes techniques › Interface — ajout de la version web locale (WebAssembly, sans serveur)
+- Ajouté : Principe VI — précision sur la version web (aucune donnée de preuve ne quitte le navigateur)
+- Templates : aucun changement requis
+- Feature concernée : specs/003-web-version
+-->
+<!--
+Sync Impact Report (initial)
 - Version: (template) → 1.0.0
 - Principes ajoutés : I. Intégrité de la preuve, II. Traçabilité, III. Moteur d'abord (library-first),
   IV. Contenu hostile par défaut, V. Tests sur corpus, VI. Hors-ligne & reproductible, VII. Simplicité
@@ -66,6 +74,9 @@ Sync Impact Report
 - L'outil fonctionne entièrement hors-ligne. Aucune télémétrie, aucune mise à jour automatique
   silencieuse, aucune résolution DNS/WHOIS implicite. Toute fonction réseau future sera opt-in,
   explicite et journalisée.
+- La version web est une page statique : le moteur s'exécute dans le navigateur (WebAssembly).
+  Aucun octet de preuve n'est transmis à un serveur ; la page ne fait aucune requête après son
+  chargement et doit pouvoir être servie depuis un fichier ou un réseau isolé.
 - Les builds sont reproductibles : `Cargo.lock` versionné, versions de dépendances épinglées,
   `cargo deny` / `cargo audit` en CI.
 
@@ -80,7 +91,9 @@ Sync Impact Report
 - Langage : Rust stable (édition 2024). Go uniquement si une capacité indispensable n'a pas
   d'implémentation Rust viable, décision documentée dans `research.md`.
 - Interface : application de bureau Tauri 2 (Windows, macOS, Linux), dans l'esprit ergonomique
-  de msg-reader (glisser-déposer, liste des messages, panneau de lecture) enrichie de vues forensic.
+  de msg-reader (glisser-déposer, liste des messages, panneau de lecture) enrichie de vues forensic ;
+  et version web locale (même interface, même moteur compilé en WebAssembly, sans serveur).
+  Les deux cibles partagent le même code d'interface et le même moteur.
 - Formats : EML (RFC 5322/2045+) et MSG (MS-OXMSG/MS-CFB) en v1 ; PST/OST (MS-PST) en lecture seule
   dans une feature ultérieure.
 - Licences des dépendances : MIT, Apache-2.0, BSD ou équivalent permissif uniquement.
@@ -100,4 +113,4 @@ Sync Impact Report
 - Amendements : PR dédiée modifiant ce fichier, avec rapport d'impact et incrément de version
   (MAJOR : principe retiré/redéfini ; MINOR : principe ou section ajouté ; PATCH : clarification).
 
-**Version**: 1.0.0 | **Ratified**: 2026-10-14 | **Last Amended**: 2026-10-14
+**Version**: 1.1.0 | **Ratified**: 2026-10-14 | **Last Amended**: 2026-10-14

@@ -3,6 +3,7 @@ import "./styles.css";
 import { FileHandler } from "./FileHandler";
 import { MessageHandler } from "./MessageHandler";
 import { UIManager } from "./UIManager";
+import { warmUp } from "./ipc";
 
 const state = new MessageHandler();
 const ui = new UIManager(state);
@@ -37,5 +38,6 @@ document.addEventListener("keydown", (e) => {
   e.preventDefault();
 });
 
+warmUp();
 void ui.render();
 void files.init();

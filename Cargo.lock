@@ -2016,6 +2016,7 @@ dependencies = [
  "mf-msg",
  "msg_parser",
  "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -2028,6 +2029,15 @@ dependencies = [
  "mf-core",
  "mf-eml",
  "msg_parser",
+]
+
+[[package]]
+name = "mf-wasm"
+version = "0.1.0"
+dependencies = [
+ "mf-engine",
+ "serde_json",
+ "wasm-bindgen",
 ]
 
 [[package]]

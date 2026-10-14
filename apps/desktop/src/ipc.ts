@@ -1,5 +1,5 @@
-// Wrappers typés des commandes Tauri (contracts/tauri-commands.md).
-// Hors Tauri (navigateur, `?demo`), un jeu de démonstration statique remplace le moteur.
+// Accès au moteur : commandes Tauri (contracts/tauri-commands.md) dans l'application de bureau,
+// module WebAssembly dans un Web Worker dans la version web (specs/003-web-version).
 
 export type Format = "eml" | "msg" | "pst" | "unknown";
 
@@ -95,6 +95,8 @@ export interface MessageView {
   message: Message;
 }
 
+import { createEngineWorker } from "./web-engine";
+
 export const inTauri = "__TAURI_INTERNALS__" in window;
 
 async function invoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
@@ -102,37 +104,120 @@ async function invoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T
   return invoke<T>(cmd, args);
 }
 
-// ——— Démonstration hors Tauri ———
-interface DemoEntry {
-  summary: Summary;
-  views: Record<string, MessageView>;
-}
-let demo: DemoEntry[] | null = null;
-async function loadDemo(): Promise<DemoEntry[]> {
-  if (!demo) demo = (await (await fetch("/demo/index.json")).json()) as DemoEntry[];
-  return demo;
+// ——— Backend web (feature 003) : moteur WebAssembly dans un Web Worker ———
+
+/** Fichier fourni par le navigateur, avec son chemin relatif (dossier déposé). */
+export interface WebFile {
+  path: string;
+  file: File;
 }
 
-export async function openPaths(paths: string[]): Promise<OpenResult[]> {
-  if (inTauri) return invoke<OpenResult[]>("open_paths", { paths });
-  return (await loadDemo()).map((d) => ({ kind: "ready", summary: d.summary }) as OpenResult);
+/** FR-W07 : au-delà, l'onglet risque de manquer de mémoire ; l'application de bureau s'impose. */
+export const WEB_MAX_SIZE = 500 * 1024 * 1024;
+
+const webViews: MessageView[] = [];
+let worker: Worker | null = null;
+let nextJob = 0;
+const pending = new Map<number, (r: { ok: boolean; view?: MessageView; error?: string }) => void>();
+
+function engine(): Worker {
+  if (!worker) {
+    worker = createEngineWorker();
+    worker.onmessage = (e: MessageEvent) => {
+      const d = e.data as { id?: number; ok: boolean; view?: MessageView; error?: string };
+      if (d.id === undefined) {
+        // Module prêt : plus aucune ressource ne sera demandée au serveur (FR-W02).
+        document.documentElement.dataset.engine = (e.data as { version?: string }).version ?? "ready";
+        return;
+      }
+      pending.get(d.id)?.(d);
+      pending.delete(d.id);
+    };
+  }
+  return worker;
+}
+
+/** Version web : charge le moteur dès l'ouverture de la page, pour que toute requête réseau
+ *  ait lieu avant que l'analyste ne dépose une preuve. */
+export function warmUp(): void {
+  if (!inTauri) engine();
+}
+
+async function analyzeInWorker(name: string, file: File): Promise<{ ok: boolean; view?: MessageView; error?: string }> {
+  const bytes = await file.arrayBuffer();
+  const id = nextJob++;
+  return new Promise((resolve) => {
+    pending.set(id, resolve);
+    engine().postMessage({ id, name, bytes }, [bytes]); // transfert sans copie
+  });
+}
+
+/** Même résumé que le backend Tauri (src-tauri/src/main.rs › summary). */
+function summarize(id: number, v: MessageView): Summary {
+  const m = v.message;
+  const first = m.from[0];
+  return {
+    id,
+    file_name: v.evidence.path.split("/").pop() ?? v.evidence.path,
+    format: v.evidence.format,
+    sha256: v.evidence.sha256,
+    subject: m.subject,
+    from: first ? (first.display_name ?? first.address) : null,
+    date_utc: m.date_utc,
+    attachments: m.attachments.length,
+    urls: m.urls.length,
+    issues: m.issues.length,
+  };
+}
+
+async function openWebFiles(files: WebFile[]): Promise<OpenResult[]> {
+  const results: OpenResult[] = [];
+  for (const { path, file } of files) {
+    if (file.size > WEB_MAX_SIZE) {
+      results.push({
+        kind: "failed",
+        path,
+        error: `fichier de ${Math.round(file.size / 1048576)} Mo : au-delà de 500 Mo, utilisez l'application de bureau`,
+      });
+      continue;
+    }
+    const r = await analyzeInWorker(path, file);
+    if (!r.ok || !r.view) {
+      results.push({ kind: "failed", path, error: r.error ?? "erreur inconnue" });
+      continue;
+    }
+    const view = r.view;
+    const of = webViews.findIndex((v) => v.evidence.sha256 === view.evidence.sha256);
+    if (of >= 0) {
+      results.push({ kind: "duplicate", path, of });
+    } else {
+      webViews.push(view);
+      results.push({ kind: "ready", summary: summarize(webViews.length - 1, view) });
+    }
+  }
+  return results;
+}
+
+// ——— API commune aux deux cibles ———
+
+export async function openSources(sources: string[] | WebFile[]): Promise<OpenResult[]> {
+  if (inTauri) return invoke<OpenResult[]>("open_paths", { paths: sources as string[] });
+  return openWebFiles(sources as WebFile[]);
 }
 
 export async function getMessage(id: number, path: number[]): Promise<MessageView> {
   if (inTauri) return invoke<MessageView>("get_message", { id, path });
-  const entry = (await loadDemo()).find((d) => d.summary.id === id);
-  const view = entry?.views[path.join("/")];
-  if (!view) throw new Error("message introuvable");
-  return view;
+  const view = webViews[id];
+  if (!view) throw new Error("preuve inconnue");
+  return view; // l'interface descend elle-même dans les messages embarqués
 }
 
 export async function initialPaths(): Promise<string[]> {
-  if (inTauri) return invoke<string[]>("initial_paths");
-  return new URLSearchParams(location.search).has("demo") ? ["demo"] : [];
+  return inTauri ? invoke<string[]>("initial_paths") : [];
 }
 
-export async function pickFiles(directory: boolean): Promise<string[]> {
-  if (!inTauri) return ["demo"];
+/** Dialogue natif (bureau) ; côté web, FileHandler utilise un <input type="file">. */
+export async function pickPaths(directory: boolean): Promise<string[]> {
   const { open } = await import("@tauri-apps/plugin-dialog");
   const picked = await open({
     multiple: true,

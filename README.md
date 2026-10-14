@@ -12,6 +12,7 @@ Le projet est structuré avec [spec-kit](https://github.com/github/spec-kit) (Sp
 
 | Étape spec-kit | Feature 001 — EML/MSG | Feature 002 — PST |
 |---|---|---|
+| Feature 003 — version web | ✅ spec, plan, tâches, implémentation (W001–W021) | |
 | `/speckit-constitution` | ✅ `.specify/memory/constitution.md` v1.0.0 | (partagée) |
 | `/speckit-specify` | ✅ `spec.md` + checklist | ✅ `spec.md` (brouillon) |
 | `/speckit-clarify` | ✅ session 2026-10-14 : en-têtes, fichiers, URL (FR-035–037) | — |
@@ -28,7 +29,8 @@ specs/
 ├── 001-email-forensic-viewer/   # feature active (.specify/feature.json)
 └── 002-pst-support/
 crates/                   # moteur Rust : mf-core, mf-eml, mf-msg, mf-analysis, mf-engine, mf-cli
-apps/desktop/             # application Tauri 2 (src-tauri/) + interface TypeScript (src/)
+apps/desktop/             # interface TypeScript (src/) partagée : application Tauri 2 (src-tauri/) et version web
+crates/mf-wasm/           # moteur compilé en WebAssembly pour la version web
 tests/corpus/             # EML/MSG de référence (voir son README)
 spikes/crate-validation/  # prototype Phase 0 : valide mail-parser, cfb, msg_parser, outlook-pst
 ```
@@ -58,6 +60,21 @@ Déposez des `.eml` / `.msg` (ou un dossier) dans la fenêtre. Pour chaque messa
 
 Autres raccourcis : `↑`/`↓` changer de message, `P` épingler, `Échap` revenir au message parent.
 
+**Version web** (même interface, même moteur compilé en WebAssembly, aucun serveur) — prérequis supplémentaires :
+`rustup target add wasm32-unknown-unknown` et `cargo install wasm-bindgen-cli --version 0.2.129`.
+
+```console
+cd apps/desktop
+npm run dev:web            # http://localhost:5173
+npm run build:web          # → dist-web/ (2,5 Mo), à servir par n'importe quel serveur statique
+npm run test:web           # e2e : concordance avec la CLI, zéro requête réseau, hors-ligne
+```
+
+Les fichiers sont lus et analysés dans le navigateur : rien n'est envoyé, et aucune requête n'est émise
+après le chargement de la page (CSP stricte, vérifiée par le test e2e). Une poussée sur `main` publie
+la page sur GitHub Pages (`.github/workflows/pages.yml`). Limites : 500 Mo par fichier, pas
+d'association de fichiers ni de PST.
+
 **Ligne de commande** :
 
 ```console
@@ -68,7 +85,7 @@ cargo build --release
 ./target/release/mf show suspect.msg --path 3 --json # message joint n°3, en JSON
 ```
 
-**Tests** : `cargo test` (16 tests, dont corpus et concordance avec `msg_parser`).
+**Tests** : `cargo test` (17 tests : corpus, concordance avec `msg_parser`, parité fichier / octets) et `npm run test:web`.
 
 ## Continuer
 

@@ -1,0 +1,15 @@
+[package]
+name = "mf-wasm"
+description = "MailForensics : moteur compilé en WebAssembly pour la version web"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+mf-engine.workspace = true
+serde_json.workspace = true
+wasm-bindgen = "=0.2.129"

@@ -1,0 +1,60 @@
+# Publication de la version web sur GitHub Pages (specs/003-web-version, W018).
+name: Version web (GitHub Pages)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: wasm-bindgen-cli@0.2.129
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/desktop/package-lock.json
+      - name: Tests du moteur
+        run: cargo test --workspace --exclude mailforensics-desktop
+      - name: Build web (moteur WebAssembly + interface)
+        working-directory: apps/desktop
+        run: |
+          npm ci
+          npm run build:web
+      - name: Tests e2e de la version web
+        working-directory: apps/desktop
+        run: |
+          cargo build -p mf-cli
+          pip install playwright
+          python -m playwright install --with-deps chromium
+          npm run test:web
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: apps/desktop/dist-web
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

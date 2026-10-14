@@ -7,6 +7,7 @@ members = [
     "crates/mf-analysis",
     "crates/mf-engine",
     "crates/mf-cli",
+    "crates/mf-wasm",
     "apps/desktop/src-tauri",
 ]
 # L'app de bureau nécessite webkit2gtk sous Linux : elle n'est pas construite par défaut.
@@ -47,3 +48,12 @@ regex = "1"
 base64 = "0.22"
 clap = { version = "4", features = ["derive"] }
 msg_parser = "0.3"
+
+# Moteur WebAssembly de la version web (feature 003) : taille minimale.
+[profile.wasm]
+inherits = "release"
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
