@@ -46,6 +46,19 @@ export interface UrlEntry {
   occurrences: number;
 }
 
+export type BlockedKind = "image" | "background" | "stylesheet" | "script" | "frame" | "media" | "object" | "other";
+
+/** Ressource distante bloquée et localisée (FR-039). */
+export interface BlockedResource {
+  number: number;
+  url: string;
+  kind: BlockedKind;
+  element: string;
+  attribute: string;
+  line: number | null;
+  marker: number | null;
+}
+
 export interface Message {
   subject: string | null;
   from: Address[];
@@ -59,8 +72,11 @@ export interface Message {
   message_id: string | null;
   headers: Header[];
   body_text: string | null;
+  /** HTML brut tel que dans la preuve (affiché comme texte dans la vue « Source HTML »). */
+  body_html: string | null;
   body_html_safe: string | null;
   blocked_remote_resources: number;
+  blocked_resources: BlockedResource[];
   attachments: Attachment[];
   urls: UrlEntry[];
   issues: string[];

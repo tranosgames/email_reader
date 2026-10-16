@@ -119,6 +119,15 @@ Workspace Cargo : `crates/mf-*/src/`, app : `apps/desktop/`, tests transverses :
 - [x] T103 [US1] Interface : MD5 affiché en clair, bouton « Télécharger » par fichier, désactivé avec explication pour un objet MAPI, dans `apps/desktop/src/views/reading.ts`
 - [x] T104 [US1] E2E web : annulation → aucun téléchargement ; confirmation → fichier téléchargé au SHA-256 attendu
 
+### Ajouts clarification 2026-10-16 — FR-039 (détail des ressources bloquées)
+
+- [x] T105 [P] [US1] Corpus `tests/corpus/eml/remote-resources.eml` (pixel, image de fond CSS et attribut, srcset, feuille de style, @import, script, cadre, vidéo, image cid:) + test d'inventaire attendu dans `crates/mf-engine/tests/corpus.rs`
+- [x] T106 [US1] Modèle `BlockedResource` (numéro, URL, type, élément, attribut, ligne, repère) dans `crates/mf-core/src/model.rs`
+- [x] T107 [US1] Inventaire dans `crates/mf-analysis/src/html.rs` : éléments conservés (repère dans le rendu) et éléments supprimés par la sanitisation (script, link, iframe, média…)
+- [x] T108 [P] [US1] CLI : section « Ressources distantes bloquées » de `mf show`
+- [x] T109 [US1] Interface : liste dépliable, repères numérotés dans le rendu, vue « Source HTML » numérotée, mention « chargement bloqué » dans la liste des URL
+- [x] T110 [US1] E2E web : liste, repère trouvé dans le rendu, ligne atteinte dans la source, zéro requête
+
 **Checkpoint**: User Story 1 fonctionnelle et testable seule — MVP « lecteur forensic sûr ».
 
 ---
@@ -351,6 +360,7 @@ Task: "T031 Sanitisation HTML dans crates/mf-analysis/src/html.rs"
 | FR-017 | T053, T057 | | FR-034 | T009, T024, T084 |
 | FR-035 | T095 | | FR-036 | T093, T094, T096 |
 | FR-037 | T091, T092, T097 | | FR-038 | T098–T104 |
+| FR-039 | T105–T110 | | | |
 
 ---
 

@@ -57,6 +57,7 @@ Déposez des `.eml` / `.msg` (ou un dossier) dans la fenêtre. Pour chaque messa
 - **Afficher les en-têtes** (bouton ou touche `H`) déplie tous les en-têtes bruts, dans l'ordre d'origine ; l'état reste mémorisé d'un message à l'autre.
 - **Fichiers contenus** liste chaque pièce jointe (nom, type, taille, inline/attaché, SHA-256 et MD5) ; un message joint (`.eml`, `.msg`) s'ouvre avec **Ouvrir le message joint**, qui affiche ses propres en-têtes, fichiers et URL.
 - **Télécharger** (sous chaque fichier) ouvre une boîte de confirmation rappelant nom, type, taille, SHA-256 et le risque ; le fichier enregistré est identique octet pour octet à celui du message, sous un nom assaini. Un message Outlook embarqué en objet MAPI n'a pas de fichier d'origine : il s'ouvre mais ne se télécharge pas.
+- **Ressources distantes bloquées** : le corps HTML est affiché sans rien charger depuis Internet (pixels de suivi, images, feuilles de style, scripts, cadres). Le bandeau « N ressources distantes bloquées » se déplie : pour chacune, son URL, son type, l'élément HTML (`<img src>`, `<td style>`…) et sa ligne dans le code HTML. **Voir dans le rendu** amène au repère numéroté placé à son emplacement, **Voir dans la source** à la ligne de l'onglet **Source HTML**.
 - **URL** liste toutes les URL du message, dédoublonnées, avec leur emplacement (en-tête, texte, HTML `href`/`src`, CSS) ; elles ne sont jamais cliquables et se copient brutes ou défangées.
 
 Autres raccourcis : `↑`/`↓` changer de message, `P` épingler, `Échap` revenir au message parent.

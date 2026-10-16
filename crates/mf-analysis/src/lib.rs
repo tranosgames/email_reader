@@ -26,7 +26,8 @@ pub fn analyze(msg: &mut Message) {
             .collect();
         let safe = html::sanitize(raw_html, &cids);
         msg.body_html_safe = Some(safe.html);
-        msg.blocked_remote_resources = safe.blocked_remote;
+        msg.blocked_remote_resources = safe.blocked.len() as u32;
+        msg.blocked_resources = safe.blocked;
     }
     msg.urls = urls::extract(msg);
     for a in &mut msg.attachments {

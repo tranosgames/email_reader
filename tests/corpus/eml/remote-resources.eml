@@ -1,0 +1,38 @@
+From: "Service Client" <info@livraison-colis.example>
+To: victim@victim.example
+Subject: Votre colis est en attente
+Date: Thu, 15 Oct 2026 07:30:00 +0000
+Message-ID: <colis-77@livraison-colis.example>
+MIME-Version: 1.0
+Content-Type: multipart/related; boundary="rel"
+
+--rel
+Content-Type: text/html; charset=utf-8
+
+<html>
+<head>
+<link rel="stylesheet" href="https://cdn.livraison-colis.example/style.css">
+<style>@import url('https://fonts.tracker.example/font.css');</style>
+<script src="https://cdn.livraison-colis.example/tracker.js"></script>
+</head>
+<body>
+<table width="600" background="https://cdn.livraison-colis.example/fond.jpg">
+<tr><td><img src="cid:logo@colis" alt="logo"></td></tr>
+<tr><td style="padding:12px;background-image:url('https://cdn.livraison-colis.example/banniere.png')">
+<p>Votre colis n'a pas pu être livré. Des frais de 1,99 EUR sont à régler.</p>
+<p><a href="https://livraison-colis.example.pay-verif.example/regler">Régler maintenant</a></p>
+<img src="https://img.livraison-colis.example/produit.jpg" srcset="https://img.livraison-colis.example/produit@2x.jpg 2x" alt="colis">
+</td></tr>
+</table>
+<iframe src="https://pay-verif.example/embed" width="1" height="1"></iframe>
+<img src="https://t.mailtrack.example/open?id=8f3a2c&amp;u=victim" width="1" height="1" alt="">
+</body>
+</html>
+--rel
+Content-Type: image/png
+Content-ID: <logo@colis>
+Content-Disposition: inline; filename="logo.png"
+Content-Transfer-Encoding: base64
+
+iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==
+--rel--

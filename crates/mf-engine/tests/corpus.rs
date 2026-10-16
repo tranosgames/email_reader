@@ -265,3 +265,142 @@ fn extract_attachments() {
     assert_eq!(reopened.message.subject.as_deref(), Some("Test Email"));
     assert!(mf_engine::extract_attachment(&m.message, &[], 99).is_err());
 }
+
+/// (numéro, URL sans schéma, type, élément, attribut, ligne, repère dans le rendu)
+type Row<'a> = (
+    u32,
+    &'a str,
+    mf_core::BlockedKind,
+    &'a str,
+    &'a str,
+    Option<u32>,
+    bool,
+);
+
+/// T105 / FR-039 : chaque ressource distante bloquée est localisée (type, élément, ligne, repère).
+#[test]
+fn blocked_resources_are_located() {
+    use mf_core::BlockedKind::*;
+    let a = mf_engine::open(&corpus("eml/remote-resources.eml")).expect("ouverture");
+    let m = &a.message;
+    let got: Vec<Row> = m
+        .blocked_resources
+        .iter()
+        .map(|b| {
+            let short = b.url.trim_start_matches("https://");
+            (
+                b.number,
+                short,
+                b.kind,
+                b.element.as_str(),
+                b.attribute.as_str(),
+                b.line,
+                b.marker.is_some(),
+            )
+        })
+        .collect();
+    assert_eq!(
+        got,
+        [
+            (
+                1,
+                "cdn.livraison-colis.example/style.css",
+                Stylesheet,
+                "link",
+                "href",
+                Some(3),
+                false
+            ),
+            (
+                2,
+                "fonts.tracker.example/font.css",
+                Stylesheet,
+                "style",
+                "@import",
+                Some(4),
+                false
+            ),
+            (
+                3,
+                "cdn.livraison-colis.example/tracker.js",
+                Script,
+                "script",
+                "src",
+                Some(5),
+                false
+            ),
+            (
+                4,
+                "cdn.livraison-colis.example/fond.jpg",
+                Background,
+                "table",
+                "background",
+                Some(8),
+                true
+            ),
+            (
+                5,
+                "cdn.livraison-colis.example/banniere.png",
+                Background,
+                "td",
+                "style",
+                Some(10),
+                true
+            ),
+            (
+                6,
+                "img.livraison-colis.example/produit.jpg",
+                Image,
+                "img",
+                "src",
+                Some(13),
+                true
+            ),
+            (
+                7,
+                "img.livraison-colis.example/produit@2x.jpg",
+                Image,
+                "img",
+                "srcset",
+                Some(13),
+                false
+            ),
+            (
+                8,
+                "pay-verif.example/embed",
+                Frame,
+                "iframe",
+                "src",
+                Some(16),
+                false
+            ),
+            (
+                9,
+                "t.mailtrack.example/open?id=8f3a2c&u=victim",
+                Image,
+                "img",
+                "src",
+                Some(17),
+                true
+            ),
+        ]
+    );
+    assert_eq!(m.blocked_remote_resources, 9);
+    let safe = m.body_html_safe.as_deref().expect("html sûr");
+    assert!(
+        !safe.contains("https://"),
+        "aucune URL distante ne subsiste dans le rendu"
+    );
+    for b in m.blocked_resources.iter().filter_map(|b| b.marker) {
+        let as_img = format!("#mf-blocked-{b}\"");
+        let as_css = format!("--mf-blocked: {b}");
+        assert!(
+            safe.contains(&as_img) || safe.contains(&as_css),
+            "repère {b} absent du rendu"
+        );
+    }
+    assert!(
+        safe.contains("data:image/png;base64,"),
+        "image cid: intégrée"
+    );
+}

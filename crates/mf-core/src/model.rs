@@ -107,6 +107,44 @@ pub struct UrlEntry {
     pub occurrences: u32,
 }
 
+/// Nature d'une ressource distante que le HTML demandait à charger (FR-039).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum BlockedKind {
+    /// `<img src>`, `<img srcset>`, `<input type=image>` — dont les pixels de suivi.
+    Image,
+    /// `style="background: url(…)"`, attribut `background`.
+    Background,
+    /// `<link rel=stylesheet>`, `@import`, `url()` dans un bloc `<style>`.
+    Stylesheet,
+    Script,
+    /// `<iframe>`, `<frame>`.
+    Frame,
+    /// `<video>`, `<audio>`, `<source>`, `<track>`, attribut `poster`.
+    Media,
+    /// `<object>`, `<embed>`.
+    Object,
+    Other,
+}
+
+/// Ressource distante bloquée : jamais chargée, mais localisée (FR-039).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BlockedResource {
+    /// Numéro affiché (1, 2, …) dans l'ordre du HTML.
+    pub number: u32,
+    pub url: String,
+    pub kind: BlockedKind,
+    /// Élément HTML d'origine (`img`, `td`, `link`…).
+    pub element: String,
+    /// Attribut ou construction d'origine (`src`, `style`, `href`, `@import`…).
+    pub attribute: String,
+    /// Ligne (1 = première) dans le corps HTML brut, si retrouvée.
+    pub line: Option<u32>,
+    /// Repère interne présent dans le HTML rendu ; `None` si l'élément a été supprimé
+    /// par la sanitisation (script, feuille de style, cadre…) et n'apparaît pas au rendu.
+    pub marker: Option<u32>,
+}
+
 /// Courriel normalisé.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Message {
@@ -128,7 +166,10 @@ pub struct Message {
     pub body_html: Option<String>,
     /// HTML sanitisé, prêt pour une iframe sandbox (rempli par l'analyse).
     pub body_html_safe: Option<String>,
+    /// Nombre de ressources distantes bloquées (= `blocked_resources.len()`).
     pub blocked_remote_resources: u32,
+    /// Détail de chaque ressource distante bloquée, dans l'ordre du HTML (FR-039).
+    pub blocked_resources: Vec<BlockedResource>,
     pub attachments: Vec<Attachment>,
     pub urls: Vec<UrlEntry>,
     /// Avertissements de parsing non bloquants.

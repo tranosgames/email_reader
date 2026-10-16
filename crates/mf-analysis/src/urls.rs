@@ -11,6 +11,9 @@ static ATTR: LazyLock<Option<Regex>> = LazyLock::new(|| {
 static CSS_URL: LazyLock<Option<Regex>> =
     LazyLock::new(|| Regex::new(r#"(?i)url\(\s*['"]?([^'")\s]+)['"]?\s*\)"#).ok());
 static TAG: LazyLock<Option<Regex>> = LazyLock::new(|| Regex::new(r"(?s)<[^>]*>").ok());
+/// Contenu non textuel (CSS, scripts) exclu de la recherche dans le texte affiché.
+static NON_TEXT: LazyLock<Option<Regex>> =
+    LazyLock::new(|| Regex::new(r"(?is)<(style|script)\b[^>]*>.*?</(style|script)\s*>").ok());
 static WWW: LazyLock<Option<Regex>> =
     LazyLock::new(|| Regex::new(r#"(?i)\bwww\.[a-z0-9-]+(\.[a-z0-9-]+)+[^\s<>"'`]*"#).ok());
 static SCHEME: LazyLock<Option<Regex>> =
@@ -121,7 +124,10 @@ pub fn extract(msg: &Message) -> Vec<UrlEntry> {
             }
         }
         if let Some(tag) = TAG.as_ref() {
-            let text = decode_entities(&tag.replace_all(html, " "));
+            let visible = NON_TEXT
+                .as_ref()
+                .map_or_else(|| html.clone(), |r| r.replace_all(html, " ").into_owned());
+            let text = decode_entities(&tag.replace_all(&visible, " "));
             c.scan_text(&text, &UrlLocation::HtmlText);
         }
     }

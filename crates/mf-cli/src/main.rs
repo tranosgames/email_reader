@@ -135,6 +135,48 @@ fn print_attachments(m: &Message, indent: usize) {
     }
 }
 
+fn kind_label(k: mf_core::BlockedKind) -> &'static str {
+    use mf_core::BlockedKind::*;
+    match k {
+        Image => "image",
+        Background => "image de fond",
+        Stylesheet => "feuille de style",
+        Script => "script",
+        Frame => "cadre",
+        Media => "média",
+        Object => "objet",
+        Other => "autre",
+    }
+}
+
+/// FR-039 : ressources que le HTML demandait à charger, bloquées et localisées.
+fn print_blocked(m: &Message) {
+    if m.blocked_resources.is_empty() {
+        return;
+    }
+    println!(
+        "Ressources distantes bloquées ({}) — jamais chargées",
+        m.blocked_resources.len()
+    );
+    for b in &m.blocked_resources {
+        println!(
+            "  {:>2}. {:<16} <{} {}>  {}  {}",
+            b.number,
+            kind_label(b.kind),
+            b.element,
+            b.attribute,
+            b.line
+                .map_or_else(|| "ligne ?".to_string(), |l| format!("ligne {l} du HTML")),
+            if b.marker.is_some() {
+                "(visible au rendu)"
+            } else {
+                "(retiré du rendu)"
+            },
+        );
+        println!("      {}", b.url);
+    }
+}
+
 fn print_urls(m: &Message, defang: bool) {
     println!("URL ({})", m.urls.len());
     if m.urls.is_empty() {
@@ -238,6 +280,7 @@ fn run(cli: Cli) -> Result<(), String> {
             println!("Fichiers contenus ({})", m.attachments.len());
             print_attachments(m, 1);
             print_urls(m, false);
+            print_blocked(m);
         }
         Cmd::Headers { file, path } => {
             let a = mf_engine::open(&file).map_err(|e| e.to_string())?;
